@@ -1,0 +1,77 @@
+perlmachine
+
+perlmachine is a Java Virtual Machine written in Perl. Of course, currently it
+doesn't have many features - in fact it merely supports a few bytecode
+instructions but as time goes by it will get more complete support.
+
+I intend to use GNU Classpath as the class library. It seems quite simple to
+include.
+
+Currently Supported
+-------------------
+
+- classpath traversal through user defined classpath
+- loading classes from file system
+- the iconst_* and istore/istore_* instructions
+- return instruction
+
+It turns out that the supported feature set is currently restricted to:
+
+- run the main method of a class
+- create local variables
+- save the values -1 to 5 to those variables
+- return
+
+Planned (or likely)
+-------------------
+
+- implementation for all instructions
+- calling and executing static initializers, constructors, methods (duh)
+- native methods (not JNI but a Perl specific interface I yet have to design)
+- I/O is quite high on my priority list
+- loading classes from JAR files
+
+Undecided
+---------
+
+- threading
+  Threading might be a bit complicated due to Perl's peculiar handling of
+  sharing data between threads. If I find an efficient way to implement multiple
+  threads without simply sharing *everything*, I'll do it of course.
+
+Not Planned (or very unlikely)
+------------------------------
+
+- JNI
+  I never did anything with XS and I don't really intend to go that way. That is
+  I assume that I need to know a thing or two about XS before I can call native
+  C/C++ libraries.
+- most of the tooling like JVMTI, debugging and stuff like that
+- GUI stuff (AWT, SWING)
+
+perlmachine Dependencies
+------------------------
+
+perlmachine needs:
+
+- perl 5.10.0 or higher (for switch)
+- Moose (I don't know what version; I guess 'not ancient' is enough)
+(- Log::Log4perl (currently not needed but planned in the short term))
+
+Running perlmachine
+-------------------
+
+In order to run perlmachine you need to do the following things:
+
+1. setup GNU Classpath
+  - either you find a precompiled solution or you compile it yourself
+  - if you compile, you might have to patch Makefile.in (see https://projects.archlinux.org/svntogit/community.git/tree/classpath/trunk/PKGBUILD),
+    it didn't work for me without that patch
+  - if you have a precompiled version, unpack it
+2. modify vm_main.pl
+  - add entries for the directory that contains the compiled classes from GNU
+    Classpath (well, technically almost any implementation should do because
+    currently only java.lang.Object is ever loaded but in the future the binding
+    might get tighter) as well as other classes you might want to run
+3. execute vm_main.pl
+
