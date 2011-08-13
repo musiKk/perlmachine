@@ -69,6 +69,36 @@ sub run {
 				$class = $stack_frame->class;
 				$instruction_index = $stack_frame->return_instruction_index;
 			}
+			when('dstore') {
+				$stack_frame->variables->[$instruction->[2]] = $stack_frame->pop_op;
+			}
+			when('dstore_0') {
+				$stack_frame->variables->[0] = $stack_frame->pop_op;
+			}
+			when('dstore_1') {
+				$stack_frame->variables->[1] = $stack_frame->pop_op;
+			}
+			when('dstore_2') {
+				$stack_frame->variables->[2] = $stack_frame->pop_op;
+			}
+			when('dstore_3') {
+				$stack_frame->variables->[3] = $stack_frame->pop_op;
+			}
+			when('fstore') {
+				$stack_frame->variables->[$instruction->[2]] = $stack_frame->pop_op;
+			}
+			when('fstore_0') {
+				$stack_frame->variables->[0] = $stack_frame->pop_op;
+			}
+			when('fstore_1') {
+				$stack_frame->variables->[1] = $stack_frame->pop_op;
+			}
+			when('fstore_2') {
+				$stack_frame->variables->[2] = $stack_frame->pop_op;
+			}
+			when('fstore_3') {
+				$stack_frame->variables->[3] = $stack_frame->pop_op;
+			}
 			when('iconst_m1') {
 				$stack_frame->push_op( Java::VM::Variable->int_variable( -1 ) );
 			}
@@ -125,6 +155,21 @@ sub run {
 					confess 'string constants not supported yet';
 				}
 				}
+			}
+			when('lstore') {
+				$stack_frame->variables->[$instruction->[2]] = $stack_frame->pop_op;
+			}
+			when('lstore_0') {
+				$stack_frame->variables->[0] = $stack_frame->pop_op;
+			}
+			when('lstore_1') {
+				$stack_frame->variables->[1] = $stack_frame->pop_op;
+			}
+			when('lstore_2') {
+				$stack_frame->variables->[2] = $stack_frame->pop_op;
+			}
+			when('lstore_3') {
+				$stack_frame->variables->[3] = $stack_frame->pop_op;
 			}
 			default {
 				warn "opcode $opcode ($mnemonic) not yet implemented";
