@@ -64,8 +64,11 @@ sub run {
 			when('return') {
 				return if 1 == scalar @{$self->stack}; # the last stack frame - the main
 				
-				$stack_frame = $self->pop_stack_frame;
+				$self->pop_stack_frame;
+				
+				$stack_frame = $self->_get_last_stack_frame;
 				$method = $stack_frame->method;
+				$code_array = Java::VM::Bytecode::Decoder::decode( $method->code_raw ); # super inefficient
 				$class = $stack_frame->class;
 				$instruction_index = $stack_frame->return_instruction_index;
 			}
@@ -171,6 +174,26 @@ sub run {
 			when('lstore_3') {
 				$stack_frame->variables->[3] = $stack_frame->pop_op;
 			}
+			when('invokestatic') {
+				my $methodref = $stack_frame->class->class->constant_pool->get_methodref( $instruction->[2] );
+				my $class_name = $methodref->[0];
+				my $method_name = $methodref->[1]->[0];
+				my $method_descriptor = $methodref->[1]->[1];
+				
+				$class = $self->_get_class( $stack_frame->class->classloader, $class_name );
+				$method = $class->class->get_method( $method_name, $method_descriptor ); # TODO check for existence
+				
+				$stack_frame->return_instruction_index( $instruction_index );
+				
+				my $new_stack_frame = Java::VM::Stackframe->new(
+					class	=> $class,
+					method	=> $method );
+				$self->push_stack_frame( $new_stack_frame );
+				
+				$instruction_index = 0;
+				$code_array = Java::VM::Bytecode::Decoder::decode( $method->code_raw );
+				next;
+			}
 			default {
 				warn "opcode $opcode ($mnemonic) not yet implemented";
 			}
@@ -178,6 +201,16 @@ sub run {
 		
 		$instruction_index++;
 	}
+}
+
+sub _get_class {
+	my $self = shift;
+	my $classloader = shift;
+	my $class_name = shift;
+	
+	my $class = $classloader->load_class( $class_name );
+	# TODO initialization
+	$class;
 }
 
 sub _get_last_stack_frame {
