@@ -212,7 +212,7 @@ sub BUILD {
 	my $reader = $self->reader;
 	
 	$self->_constant_pool_count( $reader->read_u2 );
-	for(1..$self->constant_pool_count-1) {
+	for(my $i=1;$i<$self->constant_pool_count;$i++) {
 		my $new_info;
 		my $tag = $reader->read_u1;
 		given( $tag ) {
@@ -227,9 +227,14 @@ sub BUILD {
 			when( 10) { $new_info = Java::Class::ConstantPool::Info::Methodref->new( tag => $tag, reader => $reader ) }
 			when( 11) { $new_info = Java::Class::ConstantPool::Info::InterfaceMethodref->new( tag => $tag, reader => $reader ) }
 			when( 12) { $new_info = Java::Class::ConstantPool::Info::NameAndType->new( tag => $tag, reader => $reader ) }
-			default { die 'unknown tag: ' . $tag }
+			# if this happens, we're screwed
+			default { confess 'unknown tag: ' . $tag }
 		}
-		push @{$self->elements}, $new_info;
+		$self->elements->[$i-1] = $new_info;
+		if( $tag == 5 || $tag == 6 ) { # Long and Double
+			# these info elements take up two entries in the constant pool
+			$i++;
+		}
 	}
 }
 
