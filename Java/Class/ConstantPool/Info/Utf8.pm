@@ -24,4 +24,6 @@ sub BUILD {
 	$self->_string( $reader->read_bytes( $self->length ) );
 }
 
-1;
+no Moose;
+
+__PACKAGE__->meta->make_immutable;

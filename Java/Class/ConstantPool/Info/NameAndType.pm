@@ -24,4 +24,6 @@ sub BUILD {
 	$self->_descriptor_index( $reader->read_u2 );
 }
 
-1;
+no Moose;
+
+__PACKAGE__->meta->make_immutable;

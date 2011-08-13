@@ -15,4 +15,6 @@ sub BUILD {
 	$self->_value( $self->reader->read_float );
 }
 
-1;
+no Moose;
+
+__PACKAGE__->meta->make_immutable;

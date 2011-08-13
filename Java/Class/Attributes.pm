@@ -31,11 +31,8 @@ sub BUILD {
 	for(1..$self->count) {
 		my $attribute_name_index = $reader->read_u2;
 		my $attribute_length = $reader->read_u4;
-		my $element = $cp->get_utf8( $attribute_name_index );
+		my $attribute_type = $cp->get_utf8_info( $attribute_name_index )->string;
 		
-		$Java::Class::ConstantPool::TAGS{$element->tag} eq 'Utf8' or die $!;
-		
-		my $attribute_type = $element->string;
 		my $new_attribute;
 		given( $attribute_type ) {
 			when( 'ConstantValue' ) {

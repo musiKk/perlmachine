@@ -1,4 +1,4 @@
-package Java::Class::ConstantPool::Info::Ref;
+package Java::Class::ConstantPool::Info::AbstractRef;
 
 use Moose;
 
@@ -24,4 +24,6 @@ sub BUILD {
 	$self->_name_and_type_index( $reader->read_u2 );
 }
 
-1;
+no Moose;
+
+__PACKAGE__->meta->make_immutable;

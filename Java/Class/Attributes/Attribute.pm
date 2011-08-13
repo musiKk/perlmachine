@@ -16,7 +16,7 @@ has 'name' => (
 	lazy	=> 1,
 	default	=> sub {
 		my $self = shift;
-		return $self->constant_pool->get_utf8( $self->name_index )->string;
+		return $self->constant_pool->get_utf8_info( $self->name_index )->string;
 	}
 );
 

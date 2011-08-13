@@ -2,6 +2,8 @@ package Java::Class::ConstantPool::Info::Methodref;
 
 use Moose;
 
-extends 'Java::Class::ConstantPool::Info::Ref';
+extends 'Java::Class::ConstantPool::Info::AbstractRef';
 
-1;
+no Moose;
+
+__PACKAGE__->meta->make_immutable;

@@ -45,32 +45,85 @@ our %TAGS = (
 	12	=> 'NameAndType',
 	# and reverse
 	# TODO use some bi-directional map
-	'Utf8'				=> 1,
-	'Integer'			=> 3,
-	'Float'				=> 4,
-	'Long'				=> 5,
-	'Double'			=> 6,
-	'Class'				=> 7,
-	'String'			=> 8,
-	'Fieldref'			=> 9,
-	'Methodref'			=> 10,
-	'InterfaceMethod'	=> 11,
-	'NameAndType'		=> 12
+	'Utf8'					=> 1,
+	'Integer'				=> 3,
+	'Float'					=> 4,
+	'Long'					=> 5,
+	'Double'				=> 6,
+	'Class'					=> 7,
+	'String'				=> 8,
+	'Fieldref'				=> 9,
+	'Methodref'				=> 10,
+	'InterfaceMethodref'	=> 11,
+	'NameAndType'			=> 12
 );
 
-# high level methods for information about entries
+# high level methods for information about entries -- suitable for external use
 
 sub get_class_name {
 	my $self = shift;
 	my $index = shift;
 	
-	my $class_info = $self->get_class( $index );
-	$self->get_utf8( $class_info->name_index )->string;
+	my $class_info = $self->get_class_info( $index );
+	$self->get_utf8_info( $class_info->name_index )->string;
 }
 
-# low level methods for entries
+sub get_string {
+	my $self = shift;
+	my $index = shift;
+	
+	my $string_info = $self->get_string_info( $index );
+	$self->get_utf8_info( $string_info->string_index )->string;
+}
 
-sub get_utf8 {
+sub get_fieldref {
+	my $self = shift;
+	my $index = shift;
+	
+	my $fieldref_info = $self->get_fieldref_info( $index );
+	$self->_get_ref( $fieldref_info );
+}
+
+sub get_methodref {
+	my $self = shift;
+	my $index = shift;
+	
+	my $methodref_info = $self->get_methodref_info( $index );
+	$self->_get_ref( $methodref_info );
+}
+
+sub get_interface_methodref {
+	my $self = shift;
+	my $index = shift;
+	
+	my $interface_methodref = $self->get_interface_methodref_info( $index );
+	$self->_get_ref( $interface_methodref );
+}
+
+sub get_name_and_type {
+	my $self = shift;
+	my $index = shift;
+	
+	my $name_and_type_info = $self->get_name_and_type_info( $index );
+	[
+		$self->get_string( $name_and_type_info->name_index ),
+		$self->get_string( $name_and_type_info->descriptor_index )
+	]
+}
+
+sub _get_ref {
+	my $self = shift;
+	my $ref_info = shift;
+	
+	[
+		$self->get_class_name( $ref_info->class_index ),
+		$self->get_name_and_type( $ref_info->name_and_type_index )
+	]
+}
+
+# low level methods for info elements -- probably internal use only
+
+sub get_utf8_info {
 	my $self = shift;
 	my $index = shift;
 	
@@ -80,32 +133,74 @@ sub get_utf8 {
 	return $info;
 }
 
-sub get_double {
+sub get_double_info {
 	my $self = shift;
 	my $index = shift;
-	$self->get_validated_entry( $index, 'Double' );
+	$self->get_validated_info( $index, 'Double' );
 }
 
-sub get_class {
+sub get_float_info {
 	my $self = shift;
 	my $index = shift;
-	$self->get_validated_entry( $index, 'Class' );
+	$self->get_validated_info( $index, 'Float' );
 }
 
-sub get_validated_entry {
+sub get_long_info {
+	my $self = shift;
+	my $index = shift;
+	$self->get_validated_info( $index, 'Long' );
+}
+
+sub get_class_info {
+	my $self = shift;
+	my $index = shift;
+	$self->get_validated_info( $index, 'Class' );
+}
+
+sub get_string_info {
+	my $self = shift;
+	my $index = shift;
+	$self->get_validated_info( $index, 'String' );
+}
+
+sub get_fieldref_info {
+	my $self = shift;
+	my $index = shift;
+	$self->get_validated_info( $index, 'Fieldref' );
+}
+
+sub get_methodref_info {
+	my $self = shift;
+	my $index = shift;
+	$self->get_validated_info( $index, 'Methodref' );
+}
+
+sub get_interface_methodref_info {
+	my $self = shift;
+	my $index = shift;
+	$self->get_validated_info( $index, 'InterfaceMethodref' );
+}
+
+sub get_name_and_type_info {
+	my $self = shift;
+	my $index = shift;
+	$self->get_validated_info( $index, 'NameAndType' );
+}
+
+sub get_validated_info {
 	my $self = shift;
 	my $index = shift;
 	my $tag = shift;
 	
 	$tag = $TAGS{$tag} unless $tag =~ /\d+/; # we want the numerical version
 	
-	my $entry = $self->get_entry( $index );
+	my $entry = $self->get_info( $index );
 	$entry->tag == $tag or confess 'requested ', $TAGS{$tag}, 'entry at index ', $index, ' but got ', $TAGS{$entry->tag}, "\n";
 	
 	$entry;
 }
 
-sub get_entry {
+sub get_info {
 	my $self = shift;
 	my $index = shift;
 	
@@ -138,4 +233,6 @@ sub BUILD {
 	}
 }
 
-1;
+no Moose;
+
+__PACKAGE__->meta->make_immutable;

@@ -15,4 +15,6 @@ sub BUILD {
 	$self->_string_index( $self->reader->read_u2 );
 }
 
-1;
+no Moose;
+
+__PACKAGE__->meta->make_immutable;
