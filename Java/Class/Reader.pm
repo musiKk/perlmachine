@@ -30,14 +30,16 @@ sub read_float {
 
 sub read_double {
 	my $self = shift;
-	return unpack 'F>', read_bytes($self, 8);
+	return unpack 'd>', read_bytes($self, 8);
 }
 
 sub read_long {
 	my $self = shift;
-	my $high_bytes = read_bytes($self, 4);
-	my $low_bytes = read_bytes($self, 4);
+	my $high_bytes = unpack 'N', read_bytes($self, 4);
+	my $low_bytes = unpack 'N', read_bytes($self, 4);
 	my $value = ($high_bytes << 32) | $low_bytes;
+	
+	return $value;
 }
 
 sub read_bytes {
