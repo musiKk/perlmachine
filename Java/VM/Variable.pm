@@ -50,6 +50,21 @@ sub int_variable {
 	__PACKAGE__->new( descriptor => 'I', value => $value );
 }
 
+sub float_variable {
+	my $value = shift;
+	__PACKAGE__->new( descriptor => 'F', value => $value );
+}
+
+sub long_variable {
+	my $value = shift;
+	__PACKAGE__->new( descriptor => 'J', value => $value );
+}
+
+sub double_variable {
+	my $value = shift;
+	__PACKAGE__->new( descriptor => 'D', value => $value );
+}
+
 no Moose;
 
 __PACKAGE__->meta->make_immutable;
