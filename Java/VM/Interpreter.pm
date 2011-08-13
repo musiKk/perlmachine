@@ -8,7 +8,7 @@ use Java::VM::Bytecode::Decoder;
 use Java::VM::LoadedClass;
 use Java::VM::Stackframe;
 
-# the following three attributes are just for the constructor
+# the following two attributes are just for the constructor
 has class => (
 	is			=> 'ro',
 	isa			=> 'Java::VM::LoadedClass',
@@ -104,6 +104,27 @@ sub run {
 			}
 			when('istore_3') {
 				$stack_frame->variables->[3] = $stack_frame->pop_op;
+			}
+			when(['ldc','ldc_w','ldc2_w']) {
+				my $info = $stack_frame->class->class->constant_pool->get_info( $instruction->[2] );
+				my $tag_name = $Java::Class::ConstantPool::TAGS{$info->tag};
+				given( $tag_name ) {
+				when('Integer') {
+					$stack_frame->push_op( Java::VM::Variable->int_variable( $info->value ) );
+				}
+				when('Float') {
+					$stack_frame->push_op( Java::VM::Variable->float_variable( $info->value ) );
+				}
+				when('Double') {
+					$stack_frame->push_op( Java::VM::Variable->double_variable( $info->value ) );
+				}
+				when('Long') {
+					$stack_frame->push_op( Java::VM::Variable->long_variable( $info->value ) );
+				}
+				when('String') {
+					confess 'string constants not supported yet';
+				}
+				}
 			}
 			default {
 				warn "opcode $opcode ($mnemonic) not yet implemented";
