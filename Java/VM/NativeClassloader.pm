@@ -26,12 +26,9 @@ sub load_class {
 	my @name_parts = split m{/}, $full_class_name;
 	my $class_name = pop @name_parts;
 	
-	print "loading class '$full_class_name'\n";
-	
 	my $relative_file_system_path = File::Spec->catfile( @name_parts, $class_name . '.class' );
 	for my $classpath_entry (@{$self->classpath->entries}) {
 		my $absolute_file_system_path = File::Spec->catfile( $classpath_entry, $relative_file_system_path );
-		print " * looking at $absolute_file_system_path\n";
 		if(-e $absolute_file_system_path) {
 			open my $fh, '<', $absolute_file_system_path or die $!;
 			my $class = Java::Class->new( reader => Java::Class::Reader->new( handle => $fh ) );
@@ -41,13 +38,8 @@ sub load_class {
 			my $super_class_name = $class->class->get_super_class_name;
 			$self->load_class( $super_class_name ) if $super_class_name;
 			return $class;
-		} else {
-			print " * -> does not exist\n";
 		}
 	}
-	
-	print "unable to load class '$full_class_name'\n";
-	
 	return undef;
 }
 
