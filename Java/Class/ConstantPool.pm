@@ -106,8 +106,8 @@ sub get_name_and_type {
 	
 	my $name_and_type_info = $self->get_name_and_type_info( $index );
 	[
-		$self->get_string( $name_and_type_info->name_index ),
-		$self->get_string( $name_and_type_info->descriptor_index )
+		$self->get_utf8_info( $name_and_type_info->name_index )->string,
+		$self->get_utf8_info( $name_and_type_info->descriptor_index )->string
 	]
 }
 
@@ -195,7 +195,7 @@ sub get_validated_info {
 	$tag = $TAGS{$tag} unless $tag =~ /\d+/; # we want the numerical version
 	
 	my $entry = $self->get_info( $index );
-	$entry->tag == $tag or confess 'requested ', $TAGS{$tag}, 'entry at index ', $index, ' but got ', $TAGS{$entry->tag}, "\n";
+	$entry->tag == $tag or confess 'requested ', $TAGS{$tag}, ' entry at index ', $index, ' but got ', $TAGS{$entry->tag}, "\n";
 	
 	$entry;
 }
