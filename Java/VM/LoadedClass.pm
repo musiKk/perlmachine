@@ -8,8 +8,7 @@ use Java::Class::Fields;
 has class => (
 	is			=> 'rw',
 	isa			=> 'Java::Class',
-	required	=> 1,
-	handles		=> [ 'get_method' ]
+	required	=> 1
 );
 
 # these are the static variables

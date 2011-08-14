@@ -5,6 +5,7 @@ use Moose;
 use Java::VM::Classpath;
 use Java::VM::Instance;
 use Java::VM::Interpreter;
+use Java::VM::LoadedClass;
 use Java::VM::NativeClassloader;
 
 has class_name => (
@@ -39,14 +40,14 @@ sub start {
 		die 'main class ', $class_name, ' not found';
 	}
 	
-	my $main_method = $main_class->get_method( 'main', '([Ljava/lang/String;)V' );
+	my $main_method = $main_class->class->get_method( 'main', '([Ljava/lang/String;)V' );
 	unless( $main_method ) {
 		die 'main method not found in class ', $main_class;
 	}
 	
 	my $interpreter = Java::VM::Interpreter->new(
-		class => $main_class,
-		method => $main_method );
+		class	=> $main_class,
+		method	=> $main_method );
 	$interpreter->run;
 }
 

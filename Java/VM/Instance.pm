@@ -32,7 +32,7 @@ sub BUILD {
 	my $class = $self->class;
 	confess 'no class provided' unless $class;
 	
-	my @fields = @{$class->fields->fields};
+	my @fields = @{$class->class->fields->fields};
 	my %variables = %{$self->variables};
 	for my $field (@fields) {
 		next if $field->is_static;
