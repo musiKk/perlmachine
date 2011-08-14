@@ -70,6 +70,7 @@ sub run {
 			}
 			when('return') {
 				return if 1 == scalar @{$self->stack}; # the last stack frame - the main
+				return if $method->name =~ /<c?init>/; # this is an initializer
 				
 				$self->pop_stack_frame;
 				my $current_frame = $self->get_current_stack_frame;
@@ -190,10 +191,26 @@ sub run {
 				$self->code_array( Java::VM::Bytecode::Decoder::decode( $class_and_method->[1]->code_raw ) );
 				next;
 			}
+			when('invokespecial') {
+				my $class_and_method = $self->_resolve_method( $class, $instruction->[2] );
+				my $object_var = $stack_frame->pop_op;
+				
+				my $new_stack_frame = Java::VM::Stackframe->new(
+					class	=> $class_and_method->[0],
+					method	=> $class_and_method->[1] );
+				$new_stack_frame->variables->[0] = $object_var;
+				
+				$self->push_stack_frame( $new_stack_frame );
+				$self->code_array( Java::VM::Bytecode::Decoder::decode( $class_and_method->[1]->code_raw ) );
+				next;
+			}
 			when('new') {
 				my $target_class = $self->_resolve_class( $class, $instruction->[2] );
 				my $instance = $self->_create_instance( $target_class );
 				$stack_frame->push_op( Java::VM::Variable::instance_variable( $instance ) );
+			}
+			when('pop') {
+				$stack_frame->pop_op;
 			}
 			default {
 				warn "opcode $opcode ($mnemonic) not yet implemented";
