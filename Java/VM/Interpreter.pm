@@ -60,6 +60,10 @@ sub run {
 			when('aload_0') {
 				push @{$stack_frame->operand_stack}, $stack_frame->variables->[0];
 			}
+			when('dup') {
+				my $var = $stack_frame->pop_op;
+				$stack_frame->push_op( $var, $var );
+			}
 			when('ret') {
 				$instruction_index = $instruction->[2];
 				next;
@@ -186,6 +190,11 @@ sub run {
 				$self->code_array( Java::VM::Bytecode::Decoder::decode( $class_and_method->[1]->code_raw ) );
 				next;
 			}
+			when('new') {
+				my $target_class = $self->_resolve_class( $class, $instruction->[2] );
+				my $instance = $self->_create_instance( $target_class );
+				$stack_frame->push_op( Java::VM::Variable::instance_variable( $instance ) );
+			}
 			default {
 				warn "opcode $opcode ($mnemonic) not yet implemented";
 			}
@@ -193,6 +202,23 @@ sub run {
 		
 		$stack_frame->increment_instruction_index;
 	}
+}
+
+sub _create_instance {
+	my $self = shift;
+	my $class = shift;
+	
+	# TODO execute <init>
+	Java::VM::Instance->new( class => $class );
+}
+
+sub _resolve_class {
+	my $self = shift;
+	my $class = shift;
+	my $classinfo_index = shift;
+	
+	my $target_class_name = $class->class->constant_pool->get_class_name( $classinfo_index );
+	$self->_get_class( $class->classloader, $target_class_name );
 }
 
 # Resolves the method $methodref_index points to.

@@ -45,6 +45,11 @@ sub set_default {
 	$self->value( $self->get_default );
 }
 
+sub instance_variable {
+	my $instance = shift;
+	__PACKAGE__->new( descriptor => 'L' . $instance->class->class->get_name . ';', value => $instance );
+}
+
 sub int_variable {
 	my $value = shift;
 	__PACKAGE__->new( descriptor => 'I', value => $value );
