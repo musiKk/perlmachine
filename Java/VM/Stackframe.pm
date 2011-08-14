@@ -20,11 +20,12 @@ has operand_stack => (
 	handles	=> { push_op => 'push', pop_op => 'pop' }
 );
 
-# if this stack frame is pushed onto the stack, the return instruction index is
+# if this stack frame is pushed onto the stack, the instruction index is
 # the index of the code array where execution left
-has return_instruction_index => (
+has instruction_index => (
 	is		=> 'rw',
-	isa		=> 'Int'
+	isa		=> 'Int',
+	default	=> 0
 );
 
 has method => (
@@ -38,6 +39,11 @@ has class => (
 	isa			=> 'Java::VM::LoadedClass',
 	required	=> 1
 );
+
+sub increment_instruction_index {
+	my $self = shift;
+	$self->instruction_index( $self->instruction_index + 1 );
+}
 
 no Moose;
 

@@ -33,6 +33,11 @@ has stack => (
 			pop_stack_frame		=> 'pop' }
 );
 
+has code_array => (
+	is		=> 'rw',
+	isa		=> 'ArrayRef'
+);
+
 my $code_map = Java::VM::Bytecode::Opcode::get_opcodes();
 
 # when run is called, we have exactly one stack frame on our stack: the frame
@@ -40,15 +45,13 @@ my $code_map = Java::VM::Bytecode::Opcode::get_opcodes();
 sub run {
 	my $self = shift;
 	
-	my $instruction_index = 0;
-	
-	my $stack_frame = $self->_get_last_stack_frame;
-	my $method = $stack_frame->method;
-	my $class = $stack_frame->class;
-	# TODO there should be a code cache for method code
-	my $code_array = Java::VM::Bytecode::Decoder::decode( $method->code_raw );
-	
 	while(1) {
+		my $stack_frame = $self->get_current_stack_frame;
+		my $method = $stack_frame->method;
+		my $class = $stack_frame->class;
+		my $code_array = $self->code_array;
+		my $instruction_index = $stack_frame->instruction_index;
+		
 		my $instruction = $code_array->[$instruction_index];
 		my $opcode = $instruction->[1];
 		
@@ -65,12 +68,11 @@ sub run {
 				return if 1 == scalar @{$self->stack}; # the last stack frame - the main
 				
 				$self->pop_stack_frame;
-				
-				$stack_frame = $self->_get_last_stack_frame;
-				$method = $stack_frame->method;
-				$code_array = Java::VM::Bytecode::Decoder::decode( $method->code_raw ); # super inefficient
-				$class = $stack_frame->class;
-				$instruction_index = $stack_frame->return_instruction_index;
+				my $current_frame = $self->get_current_stack_frame;
+				$current_frame->instruction_index( $current_frame->instruction_index + 1 );
+				# some sort of code cache is needed
+				$self->code_array( Java::VM::Bytecode::Decoder::decode( $current_frame->method->code_raw ) );
+				next;
 			}
 			when('dstore') {
 				$stack_frame->variables->[$instruction->[2]] = $stack_frame->pop_op;
@@ -175,23 +177,13 @@ sub run {
 				$stack_frame->variables->[3] = $stack_frame->pop_op;
 			}
 			when('invokestatic') {
-				my $methodref = $stack_frame->class->class->constant_pool->get_methodref( $instruction->[2] );
-				my $class_name = $methodref->[0];
-				my $method_name = $methodref->[1]->[0];
-				my $method_descriptor = $methodref->[1]->[1];
+				my $class_and_method = $self->_resolve_method( $class, $instruction->[2] );
 				
-				$class = $self->_get_class( $stack_frame->class->classloader, $class_name );
-				$method = $class->class->get_method( $method_name, $method_descriptor ); # TODO check for existence
+				$self->push_stack_frame( Java::VM::Stackframe->new(
+					class	=> $class_and_method->[0],
+					method	=> $class_and_method->[1] ) );
 				
-				$stack_frame->return_instruction_index( $instruction_index );
-				
-				my $new_stack_frame = Java::VM::Stackframe->new(
-					class	=> $class,
-					method	=> $method );
-				$self->push_stack_frame( $new_stack_frame );
-				
-				$instruction_index = 0;
-				$code_array = Java::VM::Bytecode::Decoder::decode( $method->code_raw );
+				$self->code_array( Java::VM::Bytecode::Decoder::decode( $class_and_method->[1]->code_raw ) );
 				next;
 			}
 			default {
@@ -199,7 +191,58 @@ sub run {
 			}
 		}
 		
-		$instruction_index++;
+		$stack_frame->increment_instruction_index;
+	}
+}
+
+# Resolves the method $methodref_index points to.
+sub _resolve_method {
+	my $self = shift;
+	my $class = shift;
+	my $methodref_index = shift;
+	
+	my $constant_pool = $class->class->constant_pool;
+	my $methodref = $constant_pool->get_methodref( $methodref_index );
+	
+	my $class_name = $methodref->[0];
+	my $method_name = $methodref->[1]->[0];
+	my $method_descriptor = $methodref->[1]->[1];
+	
+	my $target_class = $self->_get_class( $class->classloader, $class_name );
+	unless( $target_class ) {
+		# ClassNotFoundException
+		print "ClassNotFoundException: $class_name $method_name $method_descriptor\n";
+		undef;
+	}
+	
+	my $target_class_and_method = $self->_find_method( $target_class, $method_name, $method_descriptor );
+	unless( $target_class_and_method ) {
+		# NoSuchMethodException
+		print "NoSuchMethodException: $class_name $method_name $method_descriptor\n";
+		undef;
+	}
+	
+	$target_class_and_method;
+}
+
+# Finds a method in $class or any super class.
+sub _find_method {
+	my $self = shift;
+	my $class = shift;
+	my $method_name = shift;
+	my $method_descriptor = shift;
+	
+	my $method = $class->class->get_method( $method_name, $method_descriptor );
+	if( $method ) {
+		return [ $class, $method ];
+	} else {
+		my $super_class_name = $class->class->get_super_class_name;
+		unless( $super_class_name ) {
+			return undef;
+		}
+		
+		my $super_class = $self->_get_class( $super_class_name );
+		return $self->_find_method( $super_class, $method_name, $method_descriptor );
 	}
 }
 
@@ -213,10 +256,9 @@ sub _get_class {
 	$class;
 }
 
-sub _get_last_stack_frame {
+sub get_current_stack_frame {
 	my $self = shift;
-	my @stack = @{$self->stack};
-	$stack[-1];
+	$self->stack->[-1];
 }
 
 sub BUILD {
@@ -227,6 +269,7 @@ sub BUILD {
 		method	=> $self->method );
 		
 	$self->push_stack_frame( $initial_stack_frame );
+	$self->code_array( Java::VM::Bytecode::Decoder::decode( $self->method->code_raw ) );
 }
 
 no Moose;
