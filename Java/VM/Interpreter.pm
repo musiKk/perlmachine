@@ -70,13 +70,15 @@ sub run {
 			}
 			when('return') {
 				return if 1 == scalar @{$self->stack}; # the last stack frame - the main
-				return if $method->name =~ /<c?init>/; # this is an initializer
 				
 				$self->pop_stack_frame;
 				my $current_frame = $self->get_current_stack_frame;
 				$current_frame->instruction_index( $current_frame->instruction_index + 1 );
 				# some sort of code cache is needed
 				$self->code_array( Java::VM::Bytecode::Decoder::decode( $current_frame->method->code_raw ) );
+
+				return if $method->name =~ /<(cl?)init>/; # this is an initializer
+
 				next;
 			}
 			when('dstore') {
@@ -212,8 +214,19 @@ sub run {
 			when('pop') {
 				$stack_frame->pop_op;
 			}
+			when('putstatic') {
+				my $class = $stack_frame->class;
+				
+				my $class_and_field = $class->class->constant_pool->get_fieldref( $instruction->[2] );
+				
+				my $target_class = $self->_get_class( $class->classloader, $class_and_field->[0] );
+				# I ignore the descriptor because the name must be unique anyway.
+				my $target_field_name = $class_and_field->[1]->[0];
+				
+				$target_class->variables->{$target_field_name} = $stack_frame->pop_op;
+			}
 			default {
-				warn "opcode $opcode ($mnemonic) not yet implemented";
+				warn "opcode $opcode ($mnemonic) not yet implemented (in class ", $class->class->get_name, ")";
 			}
 		}
 		
@@ -225,7 +238,6 @@ sub _create_instance {
 	my $self = shift;
 	my $class = shift;
 	
-	# TODO execute <init>
 	Java::VM::Instance->new( class => $class );
 }
 
@@ -295,7 +307,19 @@ sub _get_class {
 	my $class_name = shift;
 	
 	my $class = $classloader->load_class( $class_name );
-	# TODO initialization
+	
+	my $method = $class->class->get_method( '<clinit>', '()V' );
+	if( $method && $class->requires_initialization ) {
+		# if this is set at the end of initialization, we easily get in an endless recursion
+		$class->requires_initialization( 0 );
+		
+		$self->push_stack_frame( Java::VM::Stackframe->new(
+			class	=> $class,
+			method	=> $method ) );
+		$self->code_array( Java::VM::Bytecode::Decoder::decode( $method->code_raw ) );
+		$self->run;
+	}
+	
 	$class;
 }
 
