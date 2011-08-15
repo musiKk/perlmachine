@@ -4,6 +4,7 @@ use Moose;
 
 use Java::Class;
 use Java::Class::Fields;
+use Java::VM::ClassVariable;
 
 has class => (
 	is			=> 'rw',
