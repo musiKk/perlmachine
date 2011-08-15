@@ -12,21 +12,17 @@ Currently Supported
 
 - classpath traversal through user defined classpath
 - loading classes from file system
-- the iconst_* and istore/istore_* instructions
+- a few instructions that deal with saving values to local variables
+- method execution - static and instance (this automatically includes
+  constructors)
+- static initializers are run (buggy: currently only from directly loaded
+  classes; parent classes are omitted)
 - return instruction
-
-It turns out that the supported feature set is currently restricted to:
-
-- run the main method of a class
-- create local variables
-- save the values -1 to 5 to those variables
-- return
 
 Planned (or likely)
 -------------------
 
 - implementation for all instructions
-- calling and executing static initializers, constructors, methods (duh)
 - native methods (not JNI but a Perl specific interface I yet have to design)
 - I/O is quite high on my priority list
 - loading classes from JAR files
@@ -38,6 +34,14 @@ Undecided
   Threading might be a bit complicated due to Perl's peculiar handling of
   sharing data between threads. If I find an efficient way to implement multiple
   threads without simply sharing *everything*, I'll do it of course.
+- some sort of Perl JIT
+  This could be accomplished by building strings that are Perl code which can be
+  eval'd. I thought of something along the lines of
+  
+    my $method_ref = eval 'sub { ... do stuff here ... }';
+    $method_ref->();
+    
+  Well, let's see...
 
 Not Planned (or very unlikely)
 ------------------------------
