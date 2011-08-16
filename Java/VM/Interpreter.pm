@@ -57,8 +57,35 @@ sub run {
 		
 		my $mnemonic = $code_map->{$opcode}->mnemonic;
 		given($mnemonic) {
+			when('aload') {
+				$stack_frame->push_op( $stack_frame->variables->[$instruction->[2]] );
+			}
 			when('aload_0') {
-				push @{$stack_frame->operand_stack}, $stack_frame->variables->[0];
+				$stack_frame->push_op( $stack_frame->variables->[0] );
+			}
+			when('aload_1') {
+				$stack_frame->push_op( $stack_frame->variables->[1] );
+			}
+			when('aload_2') {
+				$stack_frame->push_op( $stack_frame->variables->[2] );
+			}
+			when('aload_3') {
+				$stack_frame->push_op( $stack_frame->variables->[3] );
+			}
+			when('astore') {
+				$stack_frame->variables->[$instruction->[2]] = $stack_frame->pop_op;
+			}
+			when('astore_0') {
+				$stack_frame->variables->[0] = $stack_frame->pop_op;
+			}
+			when('astore_1') {
+				$stack_frame->variables->[1] = $stack_frame->pop_op;
+			}
+			when('astore_2') {
+				$stack_frame->variables->[2] = $stack_frame->pop_op;
+			}
+			when('astore_3') {
+				$stack_frame->variables->[3] = $stack_frame->pop_op;
 			}
 			when('dup') {
 				my $var = $stack_frame->pop_op;
@@ -132,6 +159,21 @@ sub run {
 			when('iconst_5') {
 				$stack_frame->push_op( Java::VM::Variable->int_variable( 5 ) );
 			}
+			when('iload') {
+				$stack_frame->push_op( $stack_frame->variables->[$instruction->[2]] );
+			}
+			when('iload_0') {
+				$stack_frame->push_op( $stack_frame->variables->[0] );
+			}
+			when('iload_1') {
+				$stack_frame->push_op( $stack_frame->variables->[1] );
+			}
+			when('iload_2') {
+				$stack_frame->push_op( $stack_frame->variables->[2] );
+			}
+			when('iload_3') {
+				$stack_frame->push_op( $stack_frame->variables->[3] );
+			}
 			when('istore') {
 				$stack_frame->variables->[$instruction->[2]] = $stack_frame->pop_op;
 			}
@@ -193,7 +235,7 @@ sub run {
 				$self->code_array( Java::VM::Bytecode::Decoder::decode( $class_and_method->[1]->code_raw ) );
 				next;
 			}
-			when('invokespecial') {
+			when(['invokespecial','invokeinterface']) {
 				my $class_and_method = $self->_resolve_method( $class, $instruction->[2] );
 				my $object_var = $stack_frame->pop_op;
 				
