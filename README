@@ -69,8 +69,8 @@ In order to run perlmachine you need to do the following things:
 
 1. setup GNU Classpath
   - either you find a precompiled solution or you compile it yourself
-  - if you compile, you might have to patch Makefile.in (see https://projects.archlinux.org/svntogit/community.git/tree/classpath/trunk/PKGBUILD),
-    it didn't work for me without that patch
+  - if you compile, you might have to -disable-Werror (see https://projects.archlinux.org/svntogit/community.git/tree/classpath/trunk/PKGBUILD),
+    otherwise it didn't work for me
   - if you have a precompiled version, unpack it
 2. modify vm_main.pl
   - add entries for the directory that contains the compiled classes from GNU
