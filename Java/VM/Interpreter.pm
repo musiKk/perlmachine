@@ -56,6 +56,7 @@ sub run {
 		my $opcode = $instruction->[1];
 		
 		my $mnemonic = $code_map->{$opcode}->mnemonic;
+		print "executing opcode $mnemonic, function ", $method->name, "\n";
 		given($mnemonic) {
 			when('aload') {
 				$stack_frame->push_op( $stack_frame->variables->[$instruction->[2]] );
@@ -104,7 +105,13 @@ sub run {
 				# some sort of code cache is needed
 				$self->code_array( Java::VM::Bytecode::Decoder::decode( $current_frame->method->code_raw ) );
 
-				return if $method->name =~ /<(cl?)init>/; # this is an initializer
+				if( $method->name =~ /<(cl?)init>/ ) {
+					# a bit of a hack: if we don't reset it here, it'll be incremented
+					# twice: one time now and one time for the instruction that
+					# caused the initializer to be executed in the first place
+					$current_frame->instruction_index( $current_frame->instruction_index - 1 );
+					return;
+				}
 
 				next;
 			}
@@ -228,9 +235,12 @@ sub run {
 			when('invokestatic') {
 				my $class_and_method = $self->_resolve_method( $class, $instruction->[2] );
 				
-				$self->push_stack_frame( Java::VM::Stackframe->new(
+				my $new_stack_frame = Java::VM::Stackframe->new(
 					class	=> $class_and_method->[0],
-					method	=> $class_and_method->[1] ) );
+					method	=> $class_and_method->[1] );
+				$new_stack_frame->fill_arguments( $class_and_method->[0], $class_and_method->[1] );
+				
+				$self->push_stack_frame( $new_stack_frame );
 				
 				$self->code_array( Java::VM::Bytecode::Decoder::decode( $class_and_method->[1]->code_raw ) );
 				next;
@@ -243,6 +253,7 @@ sub run {
 					class	=> $class_and_method->[0],
 					method	=> $class_and_method->[1] );
 				$new_stack_frame->variables->[0] = $object_var;
+				$new_stack_frame->fill_arguments( $object_var, $class_and_method->[1] );
 				
 				$self->push_stack_frame( $new_stack_frame );
 				$self->code_array( Java::VM::Bytecode::Decoder::decode( $class_and_method->[1]->code_raw ) );
@@ -257,15 +268,12 @@ sub run {
 				$stack_frame->pop_op;
 			}
 			when('putstatic') {
-				my $class = $stack_frame->class;
-				
-				my $class_and_field = $class->class->constant_pool->get_fieldref( $instruction->[2] );
-				
-				my $target_class = $self->_get_class( $class->classloader, $class_and_field->[0] );
-				# I ignore the descriptor because the name must be unique anyway.
-				my $target_field_name = $class_and_field->[1]->[0];
-				
-				$target_class->variables->{$target_field_name} = $stack_frame->pop_op;
+				my $class_and_field_name = $self->_get_static_field( $instruction->[2] );
+				$class_and_field_name->[0]->variables->{$class_and_field_name->[1]} = $stack_frame->pop_op;
+			}
+			when('getstatic') {
+				my $class_and_field_name = $self->_get_static_field( $instruction->[2] );
+				$stack_frame->push_op( $class_and_field_name->[0]->variables->{$class_and_field_name->[1]} );
 			}
 			default {
 				warn "opcode $opcode ($mnemonic) not yet implemented (in class ", $class->class->get_name, ")";
@@ -274,6 +282,23 @@ sub run {
 		
 		$stack_frame->increment_instruction_index;
 	}
+}
+
+sub _get_static_field {
+	my $self = shift;
+	my $fieldref_index = shift;
+	
+	my $stack_frame = $self->get_current_stack_frame;
+	
+	my $class = $stack_frame->class;
+	
+	my $class_and_field = $class->class->constant_pool->get_fieldref( $fieldref_index );
+	
+	my $target_class = $self->_get_class( $class->classloader, $class_and_field->[0] );
+	# I ignore the descriptor because the name must be unique anyway.
+	my $target_field_name = $class_and_field->[1]->[0];
+	
+	[ $target_class, $target_field_name ];
 }
 
 sub _create_instance {
