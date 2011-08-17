@@ -45,16 +45,6 @@ sub increment_instruction_index {
 	$self->instruction_index( $self->instruction_index + 1 );
 }
 
-sub fill_arguments {
-	my $self = shift;
-	my $instance = shift;
-	my $method = shift;
-	
-	my $method_descriptor = $method->descriptor;
-	
-	print "method descriptor: $method_descriptor\n";
-}
-
 no Moose;
 
 __PACKAGE__->meta->make_immutable;
