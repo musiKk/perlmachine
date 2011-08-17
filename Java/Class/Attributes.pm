@@ -7,6 +7,8 @@ use feature 'switch';
 use Java::Class::Attributes::Attribute::ConstantValue;
 use Java::Class::Attributes::Attribute::Code;
 use Java::Class::Attributes::Attribute::Exceptions;
+use Java::Class::Attributes::Attribute::LineNumberTable;
+use Java::Class::Attributes::Attribute::SourceFile;
 
 extends 'Java::Class::ElementWithCp';
 
@@ -53,11 +55,18 @@ sub BUILD {
 						reader => $reader, constant_pool => $cp
 				);
 			}
-#			when( 'LineNumberTable' ) {
-#				$new_attribute = Java::Class::Attributes::Attribute::Code->new(
-#						reader => $reader
-#				);
-#			}
+			when( 'LineNumberTable' ) {
+				$new_attribute = Java::Class::Attributes::Attribute::LineNumberTable->new(
+						name_index => $attribute_name_index, length => $attribute_length,
+						reader => $reader, constant_pool => $cp
+				);
+			}
+			when( 'SourceFile' ) {
+				$new_attribute = Java::Class::Attributes::Attribute::SourceFile->new(
+						name_index => $attribute_name_index, length => $attribute_length,
+						reader => $reader, constant_pool => $cp
+				);
+			}
 			default {
 				print 'unknown attribute_type: ' . $attribute_type . "\n";
 				$reader->read_bytes( $attribute_length )
