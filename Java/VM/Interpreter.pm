@@ -7,7 +7,6 @@ use Moose;
 use Java::VM::Bytecode::Decoder;
 use Java::VM::LoadedClass;
 use Java::VM::Stackframe;
-use Java::VM::Util::MethodDescriptorParser qw/ parse_method_descriptor /;
 
 # the following two attributes are just for the constructor
 has class => (
@@ -240,17 +239,22 @@ sub run {
 					class	=> $class_and_method->[0],
 					method	=> $class_and_method->[1] );
 				
-				# TODO lots of code duplication with the next instructions
-				my $method_descriptor = $class_and_method->[1]->descriptor;
-				my @types = parse_method_descriptor( $method_descriptor );
-				my @arguments = ();
-				for my $type ( reverse @types ) { # reverse so we can do type checking
-					my $var = $stack_frame->pop_op;
-					unshift @arguments, $var;
-				}
-				for( my $i=0; $i<@arguments; $i++ ) {
-					$new_stack_frame->variables->[$i] = $arguments[$i];
-				}
+				$new_stack_frame->fill_variables(
+					$class_and_method->[1]->descriptor,
+					$stack_frame,
+					1 );
+				
+				## TODO lots of code duplication with the next instructions
+				#my $method_descriptor = $class_and_method->[1]->descriptor;
+				#my @types = parse_method_descriptor( $method_descriptor );
+				#my @arguments = ();
+				#for my $type ( reverse @types ) { # reverse so we can do type checking
+					#my $var = $stack_frame->pop_op;
+					#unshift @arguments, $var;
+				#}
+				#for( my $i=0; $i<@arguments; $i++ ) {
+					#$new_stack_frame->variables->[$i] = $arguments[$i];
+				#}
 				
 				$self->push_stack_frame( $new_stack_frame );
 				
@@ -260,24 +264,33 @@ sub run {
 			# some day I'm gonna read up what the difference between those is...
 			when(['invokespecial','invokeinterface','invokevirtual']) {
 				my $class_and_method = $self->_resolve_method( $class, $instruction->[2] );
-
-				my $method_descriptor = $class_and_method->[1]->descriptor;
-				my @types = parse_method_descriptor( $method_descriptor );
-				my @arguments = ();
-				for my $type ( reverse @types ) { # reverse so we can to type checking
-					my $var = $stack_frame->pop_op;
-					unshift @arguments, $var;
-				}
-
-				my $object_var = $stack_frame->pop_op;
 				
 				my $new_stack_frame = Java::VM::Stackframe->new(
 					class	=> $class_and_method->[0],
 					method	=> $class_and_method->[1] );
-				$new_stack_frame->variables->[0] = $object_var;
-				for( my $i=0; $i<@arguments; $i++ ) {
-					$new_stack_frame->variables->[$i + 1] = $arguments[$i];
-				}
+				
+				$new_stack_frame->fill_variables(
+					$class_and_method->[1]->descriptor,
+					$stack_frame,
+					0 );
+				
+				#my $method_descriptor = $class_and_method->[1]->descriptor;
+				#my @types = parse_method_descriptor( $method_descriptor );
+				#my @arguments = ();
+				#for my $type ( reverse @types ) { # reverse so we can to type checking
+					#my $var = $stack_frame->pop_op;
+					#unshift @arguments, $var;
+				#}
+
+				#my $object_var = $stack_frame->pop_op;
+				
+				#my $new_stack_frame = Java::VM::Stackframe->new(
+					#class	=> $class_and_method->[0],
+					#method	=> $class_and_method->[1] );
+				#$new_stack_frame->variables->[0] = $object_var;
+				#for( my $i=0; $i<@arguments; $i++ ) {
+					#$new_stack_frame->variables->[$i + 1] = $arguments[$i];
+				#}
 				
 				$self->push_stack_frame( $new_stack_frame );
 				$self->code_array( Java::VM::Bytecode::Decoder::decode( $class_and_method->[1]->code_raw ) );
