@@ -46,6 +46,10 @@ sub decode {
 					when('if_acmpne') {		@args = ( read_2( \@code_array, $code_index+1 ) ) }
 					when('if_icmpeq') {		@args = ( read_2( \@code_array, $code_index+1 ) ) }
 					when('if_icmpne') {		@args = ( read_2( \@code_array, $code_index+1 ) ) }
+					when('if_icmplt') {		@args = ( read_2( \@code_array, $code_index+1 ) ) }
+					when('if_icmple') {		@args = ( read_2( \@code_array, $code_index+1 ) ) }
+					when('if_icmpgt') {		@args = ( read_2( \@code_array, $code_index+1 ) ) }
+					when('if_icmpge') {		@args = ( read_2( \@code_array, $code_index+1 ) ) }
 					when('if_acmplt') {		@args = ( read_2( \@code_array, $code_index+1 ) ) }
 					when('if_acmpge') {		@args = ( read_2( \@code_array, $code_index+1 ) ) }
 					when('if_acmpgt') {		@args = ( read_2( \@code_array, $code_index+1 ) ) }
