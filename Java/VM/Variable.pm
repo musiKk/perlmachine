@@ -59,7 +59,16 @@ sub stringify {
 
 sub instance_variable {
 	my $instance = shift;
-	__PACKAGE__->new( descriptor => 'L' . $instance->class->class->get_name . ';', value => $instance );
+	if( ! $instance->null ) {
+		__PACKAGE__->new( descriptor => 'L' . $instance->class->class->get_name . ';', value => $instance );
+	} else {
+		__PACKAGE__->new( descriptor => '', value => $instance );
+	}
+}
+
+sub byte_variable {
+	my $value = shift;
+	__PACKAGE__->new( descriptor => 'B', value => $value );
 }
 
 sub short_variable {

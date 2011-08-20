@@ -46,7 +46,11 @@ sub BUILD {
 sub stringify {
 	my $self = shift;
 	
-	'instance of class ' . $self->class->class->get_name . '; vars: ' . join(', ', keys %{$self->variables});
+	if( ! $self->null ) {
+		'instance of class ' . $self->class->class->get_name . '; vars: ' . join(', ', keys %{$self->variables});
+	} else {
+		'null-instance';
+	}
 }
 
 no Moose;
