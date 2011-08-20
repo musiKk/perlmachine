@@ -4,6 +4,8 @@ use feature qw/ switch /;
 
 use Moose;
 
+use Java::VM::ArrayVariable;
+
 has name => (
 	is			=> 'ro',
 	isa			=> 'Str'
@@ -20,6 +22,7 @@ has descriptor => (
 	required	=> 1
 );
 
+# this is the default for a field variable
 sub get_default {
 	my $self = shift;
 	
@@ -68,6 +71,29 @@ sub long_variable {
 sub double_variable {
 	my $value = shift;
 	__PACKAGE__->new( descriptor => 'D', value => $value );
+}
+
+sub array_variable {
+	my $length = shift;
+	my $type = shift;
+	
+	my $descriptor;
+	given( $type ) {
+		when (4) { $descriptor = 'Z' } # boolean
+		when (5) { $descriptor = 'C' } # char
+		when (6) { $descriptor = 'F' } # float
+		when (7) { $descriptor = 'D' } # double
+		when (8) { $descriptor = 'B' } # byte
+		when (9) { $descriptor = 'S' } # short
+		when (10) { $descriptor = 'I' } # integer
+		when (11) { $descriptor = 'J' } # long
+	}
+	# there should be no need to initialize the array; the default values are
+	# numerical zeroes anyway
+	Java::VM::ArrayVariable->new(
+		descriptor	=> $descriptor,
+		value		=> [],
+		length		=> $length );
 }
 
 no Moose;

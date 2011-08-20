@@ -52,8 +52,8 @@ sub fill_variables {
 	my @types = parse_method_descriptor( $method_descriptor );
 	my @variables = ();
 	for my $type ( reverse @types ) {
+		# maybe check for correct types
 		my $var = $stack_frame->pop_op;
-		print "expected $type - got ", $var->descriptor, "\n";
 		unshift @variables, $var;
 	}
 	

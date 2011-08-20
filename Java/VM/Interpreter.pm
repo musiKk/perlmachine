@@ -146,25 +146,25 @@ sub run {
 				$stack_frame->variables->[3] = $stack_frame->pop_op;
 			}
 			when('iconst_m1') {
-				$stack_frame->push_op( Java::VM::Variable->int_variable( -1 ) );
+				$stack_frame->push_op( Java::VM::Variable::int_variable( -1 ) );
 			}
 			when('iconst_0') {
-				$stack_frame->push_op( Java::VM::Variable->int_variable( 0 ) );
+				$stack_frame->push_op( Java::VM::Variable::int_variable( 0 ) );
 			}
 			when('iconst_1') {
-				$stack_frame->push_op( Java::VM::Variable->int_variable( 1 ) );
+				$stack_frame->push_op( Java::VM::Variable::int_variable( 1 ) );
 			}
 			when('iconst_2') {
-				$stack_frame->push_op( Java::VM::Variable->int_variable( 2 ) );
+				$stack_frame->push_op( Java::VM::Variable::int_variable( 2 ) );
 			}
 			when('iconst_3') {
-				$stack_frame->push_op( Java::VM::Variable->int_variable( 3 ) );
+				$stack_frame->push_op( Java::VM::Variable::int_variable( 3 ) );
 			}
 			when('iconst_4') {
-				$stack_frame->push_op( Java::VM::Variable->int_variable( 4 ) );
+				$stack_frame->push_op( Java::VM::Variable::int_variable( 4 ) );
 			}
 			when('iconst_5') {
-				$stack_frame->push_op( Java::VM::Variable->int_variable( 5 ) );
+				$stack_frame->push_op( Java::VM::Variable::int_variable( 5 ) );
 			}
 			when('iload') {
 				$stack_frame->push_op( $stack_frame->variables->[$instruction->[2]] );
@@ -196,26 +196,49 @@ sub run {
 			when('istore_3') {
 				$stack_frame->variables->[3] = $stack_frame->pop_op;
 			}
+			when('ireturn') {
+				my $return_variable = $stack_frame->pop_op;
+				$self->pop_stack_frame;
+				
+				my $current_frame = $self->get_current_stack_frame;
+				$current_frame->increment_instruction_index;
+				$self->code_array( Java::VM::Bytecode::Decoder::decode( $current_frame->method->code_raw ) );
+			}
 			when(['ldc','ldc_w','ldc2_w']) {
 				my $info = $stack_frame->class->class->constant_pool->get_info( $instruction->[2] );
 				my $tag_name = $Java::Class::ConstantPool::TAGS{$info->tag};
 				given( $tag_name ) {
 				when('Integer') {
-					$stack_frame->push_op( Java::VM::Variable->int_variable( $info->value ) );
+					$stack_frame->push_op( Java::VM::Variable::int_variable( $info->value ) );
 				}
 				when('Float') {
-					$stack_frame->push_op( Java::VM::Variable->float_variable( $info->value ) );
+					$stack_frame->push_op( Java::VM::Variable::float_variable( $info->value ) );
 				}
 				when('Double') {
-					$stack_frame->push_op( Java::VM::Variable->double_variable( $info->value ) );
+					$stack_frame->push_op( Java::VM::Variable::double_variable( $info->value ) );
 				}
 				when('Long') {
-					$stack_frame->push_op( Java::VM::Variable->long_variable( $info->value ) );
+					$stack_frame->push_op( Java::VM::Variable::long_variable( $info->value ) );
 				}
 				when('String') {
 					confess 'string constants not supported yet';
 				}
 				}
+			}
+			when('lload') {
+				$stack_frame->push_op( $stack_frame->variables->[$instruction->[2]] );
+			}
+			when('lload_0') {
+				$stack_frame->push_op( $stack_frame->variables->[0] );
+			}
+			when('lload_1') {
+				$stack_frame->push_op( $stack_frame->variables->[1] );
+			}
+			when('lload_2') {
+				$stack_frame->push_op( $stack_frame->variables->[2] );
+			}
+			when('lload_3') {
+				$stack_frame->push_op( $stack_frame->variables->[3] );
 			}
 			when('lstore') {
 				$stack_frame->variables->[$instruction->[2]] = $stack_frame->pop_op;
@@ -244,18 +267,6 @@ sub run {
 					$stack_frame,
 					1 );
 				
-				## TODO lots of code duplication with the next instructions
-				#my $method_descriptor = $class_and_method->[1]->descriptor;
-				#my @types = parse_method_descriptor( $method_descriptor );
-				#my @arguments = ();
-				#for my $type ( reverse @types ) { # reverse so we can do type checking
-					#my $var = $stack_frame->pop_op;
-					#unshift @arguments, $var;
-				#}
-				#for( my $i=0; $i<@arguments; $i++ ) {
-					#$new_stack_frame->variables->[$i] = $arguments[$i];
-				#}
-				
 				$self->push_stack_frame( $new_stack_frame );
 				
 				$self->code_array( Java::VM::Bytecode::Decoder::decode( $class_and_method->[1]->code_raw ) );
@@ -274,24 +285,6 @@ sub run {
 					$stack_frame,
 					0 );
 				
-				#my $method_descriptor = $class_and_method->[1]->descriptor;
-				#my @types = parse_method_descriptor( $method_descriptor );
-				#my @arguments = ();
-				#for my $type ( reverse @types ) { # reverse so we can to type checking
-					#my $var = $stack_frame->pop_op;
-					#unshift @arguments, $var;
-				#}
-
-				#my $object_var = $stack_frame->pop_op;
-				
-				#my $new_stack_frame = Java::VM::Stackframe->new(
-					#class	=> $class_and_method->[0],
-					#method	=> $class_and_method->[1] );
-				#$new_stack_frame->variables->[0] = $object_var;
-				#for( my $i=0; $i<@arguments; $i++ ) {
-					#$new_stack_frame->variables->[$i + 1] = $arguments[$i];
-				#}
-				
 				$self->push_stack_frame( $new_stack_frame );
 				$self->code_array( Java::VM::Bytecode::Decoder::decode( $class_and_method->[1]->code_raw ) );
 				next;
@@ -300,6 +293,10 @@ sub run {
 				my $target_class = $self->_resolve_class( $class, $instruction->[2] );
 				my $instance = $self->_create_instance( $target_class );
 				$stack_frame->push_op( Java::VM::Variable::instance_variable( $instance ) );
+			}
+			when('newarray') {
+				my $length = $stack_frame->pop_op->value;
+				$stack_frame->push_op( Java::VM::Variable::array_variable( $length, $instruction->[2] ) );
 			}
 			when('pop') {
 				$stack_frame->pop_op;
@@ -381,6 +378,11 @@ sub _resolve_method {
 		undef;
 	}
 	
+	if( $target_class_and_method->[2]->is_native ) {
+		# TODO implement
+		print "UnsatisfiedLinkError: $class_name $method_name $method_descriptor\n";
+		undef;
+	}
 	$target_class_and_method;
 }
 
