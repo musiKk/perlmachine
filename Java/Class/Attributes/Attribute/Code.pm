@@ -2,6 +2,8 @@ package Java::Class::Attributes::Attribute::Code;
 
 use Moose;
 
+use Java::Class::Attributes::Attribute::Code::ExceptionTable;
+
 extends 'Java::Class::Attributes::Attribute';
 
 has 'max_stack' => (
