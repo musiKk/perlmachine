@@ -1,10 +1,9 @@
 package Java::VM::Variable;
 
 use feature qw/ switch /;
+use overload '""' => \&stringify;
 
 use Moose;
-
-use Java::VM::ArrayVariable;
 
 has name => (
 	is			=> 'ro',
@@ -48,9 +47,24 @@ sub set_default {
 	$self->value( $self->get_default );
 }
 
+sub stringify {
+	my $self = shift;
+	
+	my $str = $self->name // 'unnamed variable';
+	$str .= ' (' . $self->descriptor . '): ' . $self->value;
+	$str;
+}
+
+# factory methods
+
 sub instance_variable {
 	my $instance = shift;
 	__PACKAGE__->new( descriptor => 'L' . $instance->class->class->get_name . ';', value => $instance );
+}
+
+sub short_variable {
+	my $value = shift;
+	__PACKAGE__->new( descriptor => 'S', value => $value );
 }
 
 sub int_variable {
@@ -87,11 +101,10 @@ sub array_variable {
 		when (9) { $descriptor = 'S' } # short
 		when (10) { $descriptor = 'I' } # integer
 		when (11) { $descriptor = 'J' } # long
-	}
-	# there should be no need to initialize the array; the default values are
-	# numerical zeroes anyway
+		default { warn "invalid array type: $type" }
+	};
 	Java::VM::ArrayVariable->new(
-		descriptor	=> $descriptor,
+		descriptor	=> '[' . $descriptor,
 		value		=> [],
 		length		=> $length );
 }

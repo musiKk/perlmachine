@@ -80,6 +80,17 @@ sub increment_instruction_index {
 	$self->instruction_index( $self->instruction_index + 1 );
 }
 
+sub dump_stack {
+	my $self = shift;
+	my $stack = $self->operand_stack;
+	
+	print "--- dumping stack\n";
+	for(reverse @$stack) {
+		print ' - ', $_, "\n";
+	}
+	print "---\n";
+}
+
 no Moose;
 
 __PACKAGE__->meta->make_immutable;

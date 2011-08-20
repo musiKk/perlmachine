@@ -7,6 +7,7 @@ use Moose;
 use Java::VM::Bytecode::Decoder;
 use Java::VM::LoadedClass;
 use Java::VM::Stackframe;
+use Java::VM::ArrayVariable;
 
 # the following two attributes are just for the constructor
 has class => (
@@ -166,6 +167,11 @@ sub run {
 			when('iconst_5') {
 				$stack_frame->push_op( Java::VM::Variable::int_variable( 5 ) );
 			}
+			when('iaload') {
+				my $index = $stack_frame->pop_op->value;
+				my $array = $stack_frame->pop_op;
+				$stack_frame->push_op( Java::VM::Variable::int_variable( $array->value->[$index] ) );
+			}
 			when('iload') {
 				$stack_frame->push_op( $stack_frame->variables->[$instruction->[2]] );
 			}
@@ -255,6 +261,9 @@ sub run {
 			when('lstore_3') {
 				$stack_frame->variables->[3] = $stack_frame->pop_op;
 			}
+			when('sipush') {
+				$stack_frame->push_op( Java::VM::Variable::short_variable( $instruction->[2] ) );
+			}
 			when('invokestatic') {
 				my $class_and_method = $self->_resolve_method( $class, $instruction->[2] );
 				
@@ -296,14 +305,27 @@ sub run {
 			}
 			when('newarray') {
 				my $length = $stack_frame->pop_op->value;
-				$stack_frame->push_op( Java::VM::Variable::array_variable( $length, $instruction->[2] ) );
+				my $array = Java::VM::Variable::array_variable( $length, $instruction->[2] );
+				$stack_frame->push_op( $array );
 			}
 			when('pop') {
 				$stack_frame->pop_op;
 			}
+			when('putfield') {
+				my $value = $stack_frame->pop_op;
+				my $instance = $stack_frame->pop_op->value;
+				
+				my $fieldref = $class->class->constant_pool->get_fieldref( $instruction->[2] );
+				$instance->variables->{$fieldref->[1]->[0]}->value( $value->value );
+			}
+			when('getfield') {
+				my $instance = $stack_frame->pop_op->value;
+				my $fieldref = $class->class->constant_pool->get_fieldref( $instruction->[2] );
+				$stack_frame->push_op( $instance->variables->{$fieldref->[1]->[0]} );
+			}
 			when('putstatic') {
 				my $class_and_field_name = $self->_get_static_field( $instruction->[2] );
-				$class_and_field_name->[0]->variables->{$class_and_field_name->[1]} = $stack_frame->pop_op;
+				$class_and_field_name->[0]->variables->{$class_and_field_name->[1]}->value( $stack_frame->pop_op->value );
 			}
 			when('getstatic') {
 				my $class_and_field_name = $self->_get_static_field( $instruction->[2] );
@@ -378,7 +400,7 @@ sub _resolve_method {
 		undef;
 	}
 	
-	if( $target_class_and_method->[2]->is_native ) {
+	if( $target_class_and_method->[1]->is_native ) {
 		# TODO implement
 		print "UnsatisfiedLinkError: $class_name $method_name $method_descriptor\n";
 		undef;
