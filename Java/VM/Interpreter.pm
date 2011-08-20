@@ -4,6 +4,7 @@ use feature qw/ switch /;
 
 use Moose;
 
+use Java::VM;
 use Java::VM::Bytecode::Decoder;
 use Java::VM::LoadedClass;
 use Java::VM::Stackframe;
@@ -59,6 +60,9 @@ sub run {
 		my $mnemonic = $code_map->{$opcode}->mnemonic;
 		print "executing opcode $mnemonic, function ", $method->name, "\n";
 		given($mnemonic) {
+			when('aconst_null') {
+				$stack_frame->push_op( Java::VM::Variable::instance_variable( Java::VM->get_null() ) );
+			}
 			when('aload') {
 				$stack_frame->push_op( $stack_frame->variables->[$instruction->[2]] );
 			}
@@ -88,6 +92,9 @@ sub run {
 			}
 			when('astore_3') {
 				$stack_frame->variables->[3] = $stack_frame->pop_op;
+			}
+			when('bipush') {
+				$stack_frame->push_op( Java::VM::Variable::byte_variable( $instruction->[2] ) );
 			}
 			when('dup') {
 				my $var = $stack_frame->pop_op;
@@ -264,6 +271,37 @@ sub run {
 			when('sipush') {
 				$stack_frame->push_op( Java::VM::Variable::short_variable( $instruction->[2] ) );
 			}
+			when(/if(_icmp)?(eq|ne|lt|le|gt|ge)/) {
+				my $mode = $2;
+				my $val2;
+				if( $1 ) {
+					$val2 = $stack_frame->pop_op->value;
+				} else {
+					$val2 = 0;
+				}
+				my $val1 = $stack_frame->pop_op->value;
+				
+				my $result;
+				given($mode) {
+					when('eq') { $result = $val1 == $val2 }
+					when('ne') { $result = $val1 != $val2 }
+					when('lt') { $result = $val1  < $val2 }
+					when('le') { $result = $val1 <= $val2 }
+					when('gt') { $result = $val1  > $val2 }
+					when('ge') { $result = $val1 >= $val2 }
+				}
+				if( $result ) {
+					$self->_set_instruction_index( $instruction->[2] );
+					next;
+				}
+			}
+			when(/if(non)?null/) {
+				my $value = $stack_frame->pop_op->value;
+				if( defined $1 != $value->null ) {
+					$self->_set_instruction_index( $instruction->[2] );
+					next;
+				}
+			}
 			when('invokestatic') {
 				my $class_and_method = $self->_resolve_method( $class, $instruction->[2] );
 				
@@ -338,6 +376,25 @@ sub run {
 		
 		$stack_frame->increment_instruction_index;
 	}
+}
+
+sub _set_instruction_index {
+	my $self = shift;
+	my $offset = shift;
+	my $stack_frame = $self->get_current_stack_frame;
+	my $current_instruction_index = $stack_frame->instruction_index;
+
+	my $target_byte = $self->code_array->[$current_instruction_index]->[0] + $offset;
+	my $target_instruction_index = $current_instruction_index;
+	my $current_byte;
+	while( ( $current_byte = $self->code_array->[$target_instruction_index]->[0] ) != $target_byte ) {
+		if( $current_byte > $target_byte ) {
+			$target_instruction_index--;
+		} else {
+			$target_instruction_index++;
+		}
+	}
+	$stack_frame->instruction_index( $target_instruction_index );
 }
 
 sub _get_static_field {
