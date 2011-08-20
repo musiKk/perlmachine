@@ -36,6 +36,8 @@ sub _build_descriptor {
 	$self->field->descriptor;
 }
 
+no Moose;
+
 __PACKAGE__->meta->make_immutable;
 
 =pod

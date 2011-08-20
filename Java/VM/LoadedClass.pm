@@ -44,7 +44,6 @@ sub _initialize_fields {
 	my $self = shift;
 	
 	my @fields = @{$self->class->fields->fields};
-	my %variables = %{$self->variables};
 	for my $field (@fields) {
 		next unless $field->is_static;
 		
@@ -52,7 +51,7 @@ sub _initialize_fields {
 		
 		my $variable = Java::VM::ClassVariable->new( field => $field );
 		$variable->set_default;
-		$variables{$field_name} = $variable;
+		$self->variables->{$field_name} = $variable;
 	}
 }
 

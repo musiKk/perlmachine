@@ -3,6 +3,7 @@ package Java::VM::Instance;
 use Moose;
 
 use Carp;
+use overload '""' => \&stringify;
 
 has class => (
 	is			=> 'ro',
@@ -33,14 +34,19 @@ sub BUILD {
 	confess 'no class provided' unless $class;
 	
 	my @fields = @{$class->class->fields->fields};
-	my %variables = %{$self->variables};
 	for my $field (@fields) {
 		next if $field->is_static;
 		
 		my $variable = Java::VM::ClassVariable->new( field => $field );
 		$variable->set_default;
-		$variables{$field->name} = $variable;
+		$self->variables->{$field->name} = $variable;
 	}
+}
+
+sub stringify {
+	my $self = shift;
+	
+	'instance of class ' . $self->class->class->get_name . '; vars: ' . join(', ', keys %{$self->variables});
 }
 
 no Moose;
