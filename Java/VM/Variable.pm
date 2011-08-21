@@ -94,6 +94,7 @@ sub array_variable {
 	
 	my $descriptor;
 	given( $type ) {
+		when (/^[\[L]/) { $descriptor = $type } # reference type
 		when (4) { $descriptor = 'Z' } # boolean
 		when (5) { $descriptor = 'C' } # char
 		when (6) { $descriptor = 'F' } # float
