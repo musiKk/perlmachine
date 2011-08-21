@@ -24,6 +24,8 @@ has classpath => (
 # this is the only instance of a null in the whole VM
 my $NULL_INSTANCE = Java::VM::Instance->new( null => 1 );
 
+my %INTERNED_STRINGS = ();
+
 sub start {
 	my $self = shift;
 	
@@ -53,6 +55,17 @@ sub start {
 
 sub get_null {
 	$NULL_INSTANCE;
+}
+
+sub get_string_instance {
+	my $string = shift;
+	$INTERNED_STRINGS{$string};
+}
+
+sub intern_string {
+	my $string = shift;
+	my $instance = shift;
+	$INTERNED_STRINGS{$string} = $instance;
 }
 
 no Moose;
