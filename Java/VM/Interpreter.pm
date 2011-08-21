@@ -354,20 +354,20 @@ sub run {
 				my $instance = $stack_frame->pop_op->value;
 				
 				my $fieldref = $class->class->constant_pool->get_fieldref( $instruction->[2] );
-				$instance->variables->{$fieldref->[1]->[0]}->value( $value->value );
+				$instance->get_field( $fieldref )->value( $value );
 			}
 			when('getfield') {
 				my $instance = $stack_frame->pop_op->value;
 				my $fieldref = $class->class->constant_pool->get_fieldref( $instruction->[2] );
-				$stack_frame->push_op( $instance->variables->{$fieldref->[1]->[0]} );
+				$stack_frame->push_op( $instance->get_field( $fieldref )->value );
 			}
 			when('putstatic') {
-				my $class_and_field_name = $self->_get_static_field( $instruction->[2] );
-				$class_and_field_name->[0]->variables->{$class_and_field_name->[1]}->value( $stack_frame->pop_op->value );
+				my $field = $self->_get_static_field( $instruction->[2] );
+				$field->value( $stack_frame->pop_op );
 			}
 			when('getstatic') {
-				my $class_and_field_name = $self->_get_static_field( $instruction->[2] );
-				$stack_frame->push_op( $class_and_field_name->[0]->variables->{$class_and_field_name->[1]} );
+				my $field = $self->_get_static_field( $instruction->[2] );
+				$stack_frame->push_op( $field );
 			}
 			default {
 				warn "opcode $opcode ($mnemonic) not yet implemented (in class ", $class->class->get_name, ")";
@@ -405,20 +405,17 @@ sub _get_static_field {
 	
 	my $class = $stack_frame->class;
 	
-	my $class_and_field = $class->class->constant_pool->get_fieldref( $fieldref_index );
-	
-	my $target_class = $self->_get_class( $class->classloader, $class_and_field->[0] );
-	# I ignore the descriptor because the name must be unique anyway.
-	my $target_field_name = $class_and_field->[1]->[0];
-	
-	[ $target_class, $target_field_name ];
+	my $fieldref = $class->class->constant_pool->get_fieldref( $fieldref_index );
+	$class->get_field( $fieldref );
 }
 
 sub _create_instance {
 	my $self = shift;
 	my $class = shift;
 	
-	Java::VM::Instance->new( class => $class );
+	my $instance = Java::VM::Instance->new( class => $class );
+	# TODO instance initialization
+	$instance;
 }
 
 sub _resolve_class {

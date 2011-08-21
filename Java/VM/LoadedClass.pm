@@ -4,21 +4,14 @@ use Moose;
 
 use Java::Class;
 use Java::Class::Fields;
-use Java::VM::ClassVariable;
+use Java::VM::WithFields;
+
+extends 'Java::VM::WithFields';
 
 has class => (
 	is			=> 'rw',
 	isa			=> 'Java::Class',
 	required	=> 1
-);
-
-# these are the static variables
-# variable name => variable
-has variables => (
-	is			=> 'ro',
-	isa			=> 'HashRef[Java::VM::ClassVariable]',
-	required	=> 1,
-	default		=> sub { {} }
 );
 
 # the classloader that loaded the current class
@@ -28,31 +21,36 @@ has classloader => (
 	required	=> 1
 );
 
-# if this is true, the static initializers of the class has yet to be executed
+# if this is true, the static initializer of the class has yet to be executed
 has requires_initialization => (
 	is			=> 'rw',
 	isa			=> 'Bool',
 	default		=> 1
 );
 
+has super_class => (
+	is			=> 'rw',
+	isa			=> 'Maybe[Java::VM::LoadedClass]'
+);
+
 sub BUILD {
 	my $self = shift;
-	$self->_initialize_fields;
+	
+	my $static_fields = [ $self->class->get_static_fields ];
+	$self->create_fields( $static_fields );
 }
 
-sub _initialize_fields {
+# returns a list of class-field pairs for the whole class hierarchy (instance fields only)
+sub _get_all_instance_fields {
 	my $self = shift;
-	
-	my @fields = @{$self->class->fields->fields};
-	for my $field (@fields) {
-		next unless $field->is_static;
-		
-		my $field_name = $field->name;
-		
-		my $variable = Java::VM::ClassVariable->new( field => $field );
-		$variable->set_default;
-		$self->variables->{$field_name} = $variable;
+	my $fields = [];
+	for my $field ( $self->class->get_instance_fields ) {
+		push @$fields, [ $self, $field ];
 	}
+	if( $self->super_class ) {
+		push @$fields, @{$self->super_class->_get_all_instance_fields};
+	}
+	$fields;
 }
 
 no Moose;

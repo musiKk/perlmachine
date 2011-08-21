@@ -36,7 +36,10 @@ sub load_class {
 			$class = Java::VM::LoadedClass->new( class => $class, classloader => $self );
 			$self->register_class( $class );
 			my $super_class_name = $class->class->get_super_class_name;
-			$self->load_class( $super_class_name ) if $super_class_name;
+			if( $super_class_name ) {
+				my $super_class = $self->load_class( $super_class_name );
+				$class->super_class( $super_class );
+			}
 			return $class;
 		}
 	}

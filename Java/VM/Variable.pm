@@ -5,11 +5,6 @@ use overload '""' => \&stringify;
 
 use Moose;
 
-has name => (
-	is			=> 'ro',
-	isa			=> 'Str'
-);
-
 has value => (
 	is			=> 'rw'
 	# yay, we are super dynamic, no 'isa'
@@ -49,10 +44,7 @@ sub set_default {
 
 sub stringify {
 	my $self = shift;
-	
-	my $str = $self->name // 'unnamed variable';
-	$str .= ' (' . $self->descriptor . '): ' . $self->value;
-	$str;
+	$self->descriptor . ': ' . $self->value;
 }
 
 # factory methods

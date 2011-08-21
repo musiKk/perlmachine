@@ -117,6 +117,16 @@ sub get_super_class_name {
 	}
 }
 
+sub get_instance_fields {
+	my $self = shift;
+	grep { ! $_->is_static } @{$self->fields->fields};
+}
+
+sub get_static_fields {
+	my $self = shift;
+	grep { $_->is_static } @{$self->fields->fields};
+}
+
 sub is_public		{ my $self = shift; $self->_check_acc_flag( 'PUBLIC' ) }
 sub is_final		{ my $self = shift; $self->_check_acc_flag( 'FINAL' ) }
 sub is_super		{ my $self = shift; $self->_check_acc_flag( 'SUPER' ) }
