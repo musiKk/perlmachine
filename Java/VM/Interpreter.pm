@@ -63,6 +63,17 @@ sub run {
 			when('aconst_null') {
 				$stack_frame->push_op( Java::VM::Variable::instance_variable( Java::VM->get_null() ) );
 			}
+			when('aaload') {
+				my $index = $stack_frame->pop_op->value;
+				my $array = $stack_frame->pop_op;
+				$stack_frame->push_op( $array->value->[$index] );
+			}
+			when('aastore') {
+				my $value = $stack_frame->pop_op;
+				my $index = $stack_frame->pop_op->value;
+				my $array = $stack_frame->pop_op;
+				$array->value->[$index] = $value;
+			}
 			when('aload') {
 				$stack_frame->push_op( $stack_frame->variables->[$instruction->[2]] );
 			}
@@ -344,6 +355,15 @@ sub run {
 			when('newarray') {
 				my $length = $stack_frame->pop_op->value;
 				my $array = Java::VM::Variable::array_variable( $length, $instruction->[2] );
+				$stack_frame->push_op( $array );
+			}
+			when('anewarray') {
+				my $length = $stack_frame->pop_op->value;
+				my $class_name = $stack_frame->class->class->constant_pool->get_class_name( $instruction->[2] );
+				if( $class_name !~ /^\[/ ) {
+					$class_name = 'L' . $class_name . ';';
+				}
+				my $array = Java::VM::Variable::array_variable( $length, $class_name );
 				$stack_frame->push_op( $array );
 			}
 			when('pop') {
