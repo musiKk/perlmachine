@@ -36,7 +36,7 @@ has super_class => (
 sub BUILD {
 	my $self = shift;
 	
-	my $static_fields = [ $self->class->get_static_fields ];
+	my $static_fields = [ map { [ $self, $_ ] } $self->class->get_static_fields ];
 	$self->create_fields( $static_fields );
 }
 
