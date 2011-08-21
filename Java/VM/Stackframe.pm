@@ -91,6 +91,17 @@ sub dump_stack {
 	print "---\n";
 }
 
+sub dump_vars {
+	my $self = shift;
+	my $vars = $self->variables;
+	
+	print "--- dumping vars\n";
+	for(@$vars) {
+		print ' - ', $_, "\n";
+	}
+	print "---\n";
+}
+
 no Moose;
 
 __PACKAGE__->meta->make_immutable;

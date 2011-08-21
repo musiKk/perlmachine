@@ -58,17 +58,17 @@ sub run {
 		my $opcode = $instruction->[1];
 		
 		my $mnemonic = $code_map->{$opcode}->mnemonic;
-		print "executing opcode $mnemonic, function ", $method->name, "\n";
+		print "executing opcode $mnemonic, function ", $method->name, ', class: ', $class->class->get_name, "\n";
 		given($mnemonic) {
 			when('aconst_null') {
 				$stack_frame->push_op( Java::VM::Variable::instance_variable( Java::VM->get_null() ) );
 			}
-			when('aaload') {
+			when(['aaload', 'iaload']) {
 				my $index = $stack_frame->pop_op->value;
 				my $array = $stack_frame->pop_op;
 				$stack_frame->push_op( $array->value->[$index] );
 			}
-			when('aastore') {
+			when(['aastore', 'iastore']) {
 				my $value = $stack_frame->pop_op;
 				my $index = $stack_frame->pop_op->value;
 				my $array = $stack_frame->pop_op;
@@ -220,6 +220,18 @@ sub run {
 			when('istore_3') {
 				$stack_frame->variables->[3] = $stack_frame->pop_op;
 			}
+			when('iadd') {
+				my $value2 = $stack_frame->pop_op->value;
+				my $value1 = $stack_frame->pop_op->value;
+				# TODO account for overflow
+				$stack_frame->push_op( Java::VM::Variable::int_variable( $value1 + $value2 ) );
+			}
+			when('isub') {
+				my $value2 = $stack_frame->pop_op->value;
+				my $value1 = $stack_frame->pop_op->value;
+				# TODO account for overflow
+				$stack_frame->push_op( Java::VM::Variable::int_variable( $value1 - $value2 ) );
+			}
 			when('ireturn') {
 				my $return_variable = $stack_frame->pop_op;
 				$self->pop_stack_frame;
@@ -229,7 +241,9 @@ sub run {
 				$self->code_array( Java::VM::Bytecode::Decoder::decode( $current_frame->method->code_raw ) );
 			}
 			when(['ldc','ldc_w','ldc2_w']) {
-				my $info = $stack_frame->class->class->constant_pool->get_info( $instruction->[2] );
+				my $constant_pool = $stack_frame->class->class->constant_pool;
+				my $info = $constant_pool->get_info( $instruction->[2] );
+				print 'constant at index ', $instruction->[2], "\n";
 				my $tag_name = $Java::Class::ConstantPool::TAGS{$info->tag};
 				given( $tag_name ) {
 				when('Integer') {
@@ -245,7 +259,34 @@ sub run {
 					$stack_frame->push_op( Java::VM::Variable::long_variable( $info->value ) );
 				}
 				when('String') {
-					confess 'string constants not supported yet';
+					my $string_literal = $constant_pool->get_string( $instruction->[2] );
+					print 'requesting string constant for ', $string_literal, "\n";
+					my $string_instance = Java::VM::get_string_instance( $string_literal );
+					if( $string_instance ) {
+						$stack_frame->push_op( $string_instance );
+					} else {
+						my $string_instance = $self->_create_instance( $self->_get_class( $stack_frame->class->classloader, 'java/lang/String' ) );
+						print "created new string instance $string_instance\n";
+						
+						my @chars = split //, $string_literal;
+						print 'characters: ', join(', ', @chars), "\n";
+						my $char_array = Java::VM::Variable::array_variable( scalar @chars, 5 );
+						for( my $i=0; $i<scalar @chars; $i++ ) {
+							$char_array->value->[$i] = $chars[$i];
+						}
+						
+						my $string_constructor = $string_instance->class->class->get_method( '<init>', '([C)V' );
+						confess 'couldn\'t find string constructor' unless $string_constructor;
+						
+						my $new_stack_frame = Java::VM::Stackframe->new(
+							method	=> $string_constructor,
+							class	=> $string_instance->class );
+						$new_stack_frame->variables->[0] = Java::VM::Variable::instance_variable( $string_instance );
+						$new_stack_frame->variables->[1] = $char_array;
+						$self->push_stack_frame( $new_stack_frame );
+						$self->code_array( Java::VM::Bytecode::Decoder::decode( $string_constructor->code_raw ) );
+						continue;
+					}
 				}
 				}
 			}
@@ -366,6 +407,10 @@ sub run {
 				my $array = Java::VM::Variable::array_variable( $length, $class_name );
 				$stack_frame->push_op( $array );
 			}
+			when('arraylength') {
+				my $array = $stack_frame->pop_op;
+				$stack_frame->push_op( Java::VM::Variable::int_variable( $array->length ) );
+			}
 			when('pop') {
 				$stack_frame->pop_op;
 			}
@@ -434,7 +479,6 @@ sub _create_instance {
 	my $class = shift;
 	
 	my $instance = Java::VM::Instance->new( class => $class );
-	# TODO instance initialization
 	$instance;
 }
 
