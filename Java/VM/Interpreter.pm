@@ -358,6 +358,31 @@ sub run {
 			when('invokestatic') {
 				my $class_and_method = $self->_resolve_method( $class, $instruction->[2] );
 				
+				my $class = $class_and_method->[0];
+				my $method = $class_and_method->[1];
+				
+				if( $method->is_native && $class->class->get_name eq 'java/lang/VMSystem'
+					&& $method->name eq 'arraycopy' ) {
+					
+					my $length = $stack_frame->pop_op->value;
+					my $dest_pos = $stack_frame->pop_op->value;
+					my $dest = $stack_frame->pop_op;
+					my $src_pos = $stack_frame->pop_op->value;
+					my $src = $stack_frame->pop_op;
+					
+					printf "System.arraycopy(%s, %d, %s, %d, %d)\n",
+						$src, $src_pos, $dest, $dest_pos, $length;
+					
+					my $cur_src_pos = $src_pos;
+					my $cur_dest_pos = $dest_pos;
+					while( 1 ) {
+						last if $cur_src_pos > ( $src_pos + $length );
+						$dest->value->[$cur_dest_pos] = $src->value->[$cur_src_pos++];
+					}
+					$stack_frame->increment_instruction_index;
+					next;
+				}
+				
 				my $new_stack_frame = Java::VM::Stackframe->new(
 					class	=> $class_and_method->[0],
 					method	=> $class_and_method->[1] );
@@ -523,7 +548,7 @@ sub _resolve_method {
 	if( $target_class_and_method->[1]->is_native ) {
 		# TODO implement
 		print "UnsatisfiedLinkError: $class_name $method_name $method_descriptor\n";
-		undef;
+#		undef;
 	}
 	$target_class_and_method;
 }
