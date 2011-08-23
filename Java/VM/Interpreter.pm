@@ -117,6 +117,9 @@ sub run {
 				my $var = $stack_frame->pop_op;
 				$stack_frame->push_op( $var, $var );
 			}
+			when('goto') {
+				$self->_set_instruction_index( $instruction->[2] );
+			}
 			when('ret') {
 				$instruction_index = $instruction->[2];
 				next;
@@ -229,12 +232,13 @@ sub run {
 				# TODO account for overflow
 				$stack_frame->push_op( Java::VM::Variable::int_variable( $value1 - $value2 ) );
 			}
-			when('ireturn') {
+			when(['ireturn', 'areturn']) {
 				my $return_variable = $stack_frame->pop_op;
 				$self->pop_stack_frame;
 				
 				my $current_frame = $self->get_current_stack_frame;
 				$current_frame->increment_instruction_index;
+				$current_frame->push_op( $return_variable );
 				$self->code_array( Java::VM::Bytecode::Decoder::decode( $current_frame->method->code_raw ) );
 			}
 			when(['ldc','ldc_w','ldc2_w']) {
