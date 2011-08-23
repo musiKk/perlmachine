@@ -58,7 +58,13 @@ sub run {
 		my $opcode = $instruction->[1];
 		
 		my $mnemonic = $code_map->{$opcode}->mnemonic;
-		print "executing opcode $mnemonic, function ", $method->name, ', class: ', $class->class->get_name, "\n";
+		
+		my $stack_depth = @{$self->stack} - 1;
+		print ' |   ' x $stack_depth, $instruction_index,
+			" executing opcode $mnemonic, function ",
+			$method->name, ' (', $method->descriptor, 
+			'), class: ', $class->class->get_name, "\n";
+		
 		given($mnemonic) {
 			when('aconst_null') {
 				$stack_frame->push_op( Java::VM::Variable::instance_variable( Java::VM->get_null() ) );
@@ -118,21 +124,12 @@ sub run {
 			when('return') {
 				return if 1 == scalar @{$self->stack}; # the last stack frame - the main
 				
-				$self->pop_stack_frame;
+				my $previous_stack_frame = $self->pop_stack_frame;
 				my $current_frame = $self->get_current_stack_frame;
-				$current_frame->instruction_index( $current_frame->instruction_index + 1 );
 				# some sort of code cache is needed
 				$self->code_array( Java::VM::Bytecode::Decoder::decode( $current_frame->method->code_raw ) );
-
-				if( $method->name =~ /<(cl?)init>/ ) {
-					# a bit of a hack: if we don't reset it here, it'll be incremented
-					# twice: one time now and one time for the instruction that
-					# caused the initializer to be executed in the first place
-					$current_frame->instruction_index( $current_frame->instruction_index - 1 );
-					return;
-				}
-
-				next;
+				
+				return if $previous_stack_frame->return_control;
 			}
 			when('dstore') {
 				$stack_frame->variables->[$instruction->[2]] = $stack_frame->pop_op;
@@ -369,7 +366,6 @@ sub run {
 				$self->push_stack_frame( $new_stack_frame );
 				
 				$self->code_array( Java::VM::Bytecode::Decoder::decode( $class_and_method->[1]->code_raw ) );
-				next;
 			}
 			# some day I'm gonna read up what the difference between those is...
 			when(['invokespecial','invokeinterface','invokevirtual']) {
@@ -432,7 +428,7 @@ sub run {
 			}
 			when('getstatic') {
 				my $field = $self->_get_static_field( $instruction->[2] );
-				$stack_frame->push_op( $field );
+				$stack_frame->push_op( $field->value );
 			}
 			default {
 				warn "opcode $opcode ($mnemonic) not yet implemented (in class ", $class->class->get_name, ")";
@@ -471,7 +467,9 @@ sub _get_static_field {
 	my $class = $stack_frame->class;
 	
 	my $fieldref = $class->class->constant_pool->get_fieldref( $fieldref_index );
-	$class->get_field( $fieldref );
+	
+	my $target_class = $self->_get_class( $class->classloader, $fieldref->[0] );
+	$target_class->get_field( $fieldref );
 }
 
 sub _create_instance {
@@ -560,8 +558,9 @@ sub _get_class {
 		$class->requires_initialization( 0 );
 		
 		$self->push_stack_frame( Java::VM::Stackframe->new(
-			class	=> $class,
-			method	=> $method ) );
+			class			=> $class,
+			method			=> $method,
+			return_control	=> 1 ) );
 		$self->code_array( Java::VM::Bytecode::Decoder::decode( $method->code_raw ) );
 		$self->run;
 	}

@@ -41,6 +41,17 @@ has class => (
 	required	=> 1
 );
 
+# This is a stupid implementation detail of the interpreter:
+# If this is set and the current method is done, the interpreter will return
+# from the sub executing the main loop after popping the stack rather than
+# continuing. This allows to have code executed in the midst of an instruction
+# like static initializers and creating string instances from literals.
+has return_control => (
+	is			=> 'ro',
+	isa			=> 'Bool',
+	default		=> 0
+);
+
 # parses the given method descriptor, takes the appropriate variables from the
 # operand stack of $stack_frame and sets those to the variables of $self
 sub fill_variables {
