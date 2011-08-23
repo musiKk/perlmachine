@@ -411,7 +411,6 @@ sub run {
 				
 				$self->push_stack_frame( $new_stack_frame );
 				$self->code_array( Java::VM::Bytecode::Decoder::decode( $class_and_method->[1]->code_raw ) );
-				next;
 			}
 			when('new') {
 				my $target_class = $self->_resolve_class( $class, $instruction->[2] );
