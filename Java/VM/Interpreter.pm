@@ -265,16 +265,14 @@ sub run {
 				}
 				when('String') {
 					my $string_literal = $constant_pool->get_string( $instruction->[2] );
-					print 'requesting string constant for ', $string_literal, "\n";
 					my $string_instance = Java::VM::get_string_instance( $string_literal );
 					if( $string_instance ) {
 						$stack_frame->push_op( $string_instance );
 					} else {
 						my $string_instance = $self->_create_instance( $self->_get_class( $stack_frame->class->classloader, 'java/lang/String' ) );
-						print "created new string instance $string_instance\n";
+						$stack_frame->push_op( Java::VM::Variable::instance_variable( $string_instance ) );
 						
 						my @chars = split //, $string_literal;
-						print 'characters: ', join(', ', @chars), "\n";
 						my $char_array = Java::VM::Variable::array_variable( scalar @chars, 5 );
 						for( my $i=0; $i<scalar @chars; $i++ ) {
 							$char_array->value->[$i] = $chars[$i];
