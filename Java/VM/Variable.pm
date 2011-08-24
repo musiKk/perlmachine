@@ -119,14 +119,14 @@ __PACKAGE__->meta->make_immutable;
 
 =head1 NAME
 
-Java::VM::Variable - A variable in the VM (a name-value-type tuple).
+Java::VM::Variable - A variable in the VM (a value-type tuple).
 
 =head1 SYNOPSIS
 
 =head1 DESCRIPTION
 
-A variable has a value, a descriptor like C<I>, C<[B> or
-C<Ljava/util/String;> and optionally a name.
+A variable has a value and a descriptor like C<I>, C<[B> or
+C<Ljava/util/String;>.
 
 Following is the encoding of values by type:
 
@@ -147,6 +147,6 @@ boolean (Z):
 	1 - true
 
 array ([):
-	currently unsupported
+	an array reference... see Java::VM::ArrayVariable
 
 =cut
