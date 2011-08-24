@@ -60,7 +60,7 @@ sub run {
 		my $mnemonic = $code_map->{$opcode}->mnemonic;
 		
 		my $stack_depth = @{$self->stack} - 1;
-		print ' |   ' x $stack_depth, $instruction_index,
+		print '|    ' x $stack_depth, $instruction_index,
 			" executing opcode $mnemonic, function ",
 			$method->name, ' (', $method->descriptor, 
 			'), class: ', $class->class->get_name, "\n";
@@ -219,6 +219,10 @@ sub run {
 			}
 			when('istore_3') {
 				$stack_frame->variables->[3] = $stack_frame->pop_op;
+			}
+			when('iinc') {
+				my $incvar = $stack_frame->variables->[$instruction->[2]];
+				$incvar->value( $incvar->value + $instruction->[3] );
 			}
 			when('iadd') {
 				my $value2 = $stack_frame->pop_op->value;
