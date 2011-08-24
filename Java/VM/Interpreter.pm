@@ -347,14 +347,12 @@ sub run {
 				}
 				if( $result ) {
 					$self->_set_instruction_index( $instruction->[2] );
-					next;
 				}
 			}
 			when(/if(non)?null/) {
 				my $value = $stack_frame->pop_op->value;
 				if( defined $1 != $value->null ) {
 					$self->_set_instruction_index( $instruction->[2] );
-					next;
 				}
 			}
 			when('invokestatic') {
@@ -485,7 +483,7 @@ sub _set_instruction_index {
 			$target_instruction_index++;
 		}
 	}
-	$stack_frame->instruction_index( $target_instruction_index );
+	$stack_frame->instruction_index( $target_instruction_index - 1 );
 }
 
 sub _get_static_field {
