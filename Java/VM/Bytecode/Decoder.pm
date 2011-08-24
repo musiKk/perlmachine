@@ -63,7 +63,7 @@ sub decode {
 					when('ifnonnull') {		@args = ( read_2( \@code_array, $code_index+1 ) ) }
 					when('ifnull') {		@args = ( read_2( \@code_array, $code_index+1 ) ) }
 					when('iinc') {			@args = ( read_u1( \@code_array, $code_index+1 ), 
-													read_1( \@code_array, $code_index+3 ) ) }
+													read_1( \@code_array, $code_index+2 ) ) }
 					when('iload') {			@args = ( read_u1( \@code_array, $code_index+1 ) ) }
 					when('instanceof') {	@args = ( read_u2( \@code_array, $code_index+1 ) ) }
 					# TODO check zero byte at end of invokeinterface
