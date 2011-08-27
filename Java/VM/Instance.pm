@@ -33,7 +33,7 @@ sub stringify {
 	my $self = shift;
 	
 	if( ! $self->null ) {
-		'instance of class ' . $self->class->class->get_name . '; vars: ' . join(', ', values %{$self->fields});
+		'instance of class ' . $self->class->class->get_name;
 	} else {
 		'null-instance';
 	}

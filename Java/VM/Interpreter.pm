@@ -115,7 +115,8 @@ sub run {
 			}
 			when('dup') {
 				my $var = $stack_frame->pop_op;
-				$stack_frame->push_op( $var, $var );
+				$stack_frame->push_op( $var );
+				$stack_frame->push_op( $var );
 			}
 			when('goto') {
 				$self->_set_instruction_index( $instruction->[2] );
@@ -270,7 +271,8 @@ sub run {
 						$stack_frame->push_op( $string_instance );
 					} else {
 						my $string_instance = $self->_create_instance( $self->_get_class( $stack_frame->class->classloader, 'java/lang/String' ) );
-						$stack_frame->push_op( Java::VM::Variable::instance_variable( $string_instance ) );
+						my $string_variable = Java::VM::Variable::instance_variable( $string_instance );
+						$stack_frame->push_op( $string_variable );
 						
 						my @chars = split //, $string_literal;
 						my $char_array = Java::VM::Variable::array_variable( scalar @chars, 5 );
@@ -284,7 +286,7 @@ sub run {
 						my $new_stack_frame = Java::VM::Stackframe->new(
 							method	=> $string_constructor,
 							class	=> $string_instance->class );
-						$new_stack_frame->variables->[0] = Java::VM::Variable::instance_variable( $string_instance );
+						$new_stack_frame->variables->[0] = $string_variable;
 						$new_stack_frame->variables->[1] = $char_array;
 						$self->push_stack_frame( $new_stack_frame );
 						$self->code_array( Java::VM::Bytecode::Decoder::decode( $string_constructor->code_raw ) );
