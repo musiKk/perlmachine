@@ -17,8 +17,13 @@ has operand_stack => (
 	is		=> 'ro',
 	isa		=> 'ArrayRef[Java::VM::Variable]',
 	traits	=> [ 'Array' ],
-	default	=> sub { [] },
-	handles	=> { push_op => 'push', pop_op => 'pop' }
+	default	=> sub { [] }
+);
+
+has _stack_depth => (
+	is		=> 'rw',
+	isa		=> 'Int',
+	default	=> 0
 );
 
 # if this stack frame is pushed onto the stack, the instruction index is
@@ -91,13 +96,35 @@ sub increment_instruction_index {
 	$self->instruction_index( $self->instruction_index + 1 );
 }
 
+sub push_op {
+	my $self = shift;
+	my $variable = shift;
+	
+	print "------- pushing undefined value\n" unless defined $variable;
+	
+	$self->_stack_depth( $self->_stack_depth + 1 );
+	push @{$self->operand_stack}, $variable;
+}
+
+sub pop_op {
+	my $self = shift;
+	
+	$self->_stack_depth( $self->_stack_depth - 1 );
+	pop @{$self->operand_stack};
+}
+
 sub dump_stack {
 	my $self = shift;
 	my $stack = $self->operand_stack;
 	
 	print "--- dumping stack\n";
-	for(reverse @$stack) {
-		print ' - ', $_, "\n";
+	for(my $i=0; $i<$self->_stack_depth; $i++) {
+		my $var = $stack->[$self->_stack_depth - 1 - $i];
+		if($var) {
+			print ' - ', $var, "\n";
+		} else {
+			print " - <undefined value>\n";
+		}
 	}
 	print "---\n";
 }
@@ -108,7 +135,11 @@ sub dump_vars {
 	
 	print "--- dumping vars\n";
 	for(@$vars) {
-		print ' - ', $_, "\n";
+		if($_) {
+			print ' - ', $_, "\n";
+		} else {
+			print " - <undefined value>\n";
+		}
 	}
 	print "---\n";
 }
