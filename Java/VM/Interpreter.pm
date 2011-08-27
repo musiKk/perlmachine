@@ -242,7 +242,6 @@ sub run {
 				$self->pop_stack_frame;
 				
 				my $current_frame = $self->get_current_stack_frame;
-				$current_frame->increment_instruction_index;
 				$current_frame->push_op( $return_variable );
 				$self->code_array( Java::VM::Bytecode::Decoder::decode( $current_frame->method->code_raw ) );
 			}
