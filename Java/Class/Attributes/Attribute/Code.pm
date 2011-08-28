@@ -59,4 +59,6 @@ sub BUILD {
 	$self->_attributes( Java::Class::Attributes->new( reader => $reader, constant_pool => $self->constant_pool ) );
 }
 
-1;
+no Moose;
+
+__PACKAGE__->meta->make_immutable;

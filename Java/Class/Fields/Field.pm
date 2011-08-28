@@ -88,4 +88,6 @@ sub _check_acc_flag {
 	$self->access_flags & $ACCESS_FLAGS{$flag_name};
 }
 
-1;
+no Moose;
+
+__PACKAGE__->meta->make_immutable;

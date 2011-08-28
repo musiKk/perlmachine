@@ -4,4 +4,6 @@ use Moose;
 
 extends 'Java::Class::Attributes::Attribute';
 
-1;
+no Moose;
+
+__PACKAGE__->meta->make_immutable;

@@ -29,4 +29,6 @@ sub to_string {
 	return $self->major . '.' . $self->minor;
 }
 
-1;
+no Moose;
+
+__PACKAGE__->meta->make_immutable;

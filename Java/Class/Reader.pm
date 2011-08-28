@@ -56,6 +56,6 @@ sub read_bytes {
 	return $data;
 }
 
-__PACKAGE__->meta->make_immutable;
+no Moose;
 
-1;
+__PACKAGE__->meta->make_immutable;

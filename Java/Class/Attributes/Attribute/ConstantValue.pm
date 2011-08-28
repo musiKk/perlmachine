@@ -16,4 +16,6 @@ sub BUILD {
 	$self->_constantvalue_index( $self->reader->read_u2 );
 }
 
-1;
+no Moose;
+
+__PACKAGE__->meta->make_immutable;
