@@ -1,0 +1,11 @@
+.header {
+	text-align: center;
+	
+	margin: 20px;
+	
+	border-width: 2px;
+	border-color: black;
+	border-style: solid;
+	
+	background-color: silver;
+}
