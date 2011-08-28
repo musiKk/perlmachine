@@ -1,47 +1,87 @@
 perlmachine
 
-perlmachine is a Java Virtual Machine written in Perl. Of course, currently it
-doesn't have many features - in fact it merely supports a few bytecode
-instructions but as time goes by it will get more complete support.
+perlmachine is a Java Virtual Machine written in Perl. Currently it doesn't have
+too many features. However a few simple programs that don't require native code
+work fine. The lack of I/O however makes this not obvious. :)
 
 I intend to use GNU Classpath as the class library. It seems quite simple to
 include.
+
+perlmachine Dependencies
+------------------------
+
+- Perl 5.10.0 or higher (for switch); since that got EOL'd, you might consider
+  switching to 5.12 or 5.14 anyway
+- Moose (I don't know what version; I guess 'not ancient' is enough)
+
+Running perlmachine
+-------------------
+
+In order to run perlmachine you need to do the following things:
+
+1. setup GNU Classpath
+  - either you find a precompiled solution or you compile it yourself
+  - if you compile, you might have to patch (see https://projects.archlinux.org/svntogit/community.git/tree/classpath/trunk/PKGBUILD),
+    otherwise it didn't work for me
+  - if you have a precompiled version, unpack it
+2. modify vm_main.pl
+  - add entries for the directory that contains the compiled classes from GNU
+    Classpath (well, technically almost any implementation should do because
+    currently only java.lang.Object is ever loaded but in the future the binding
+    might get tighter) as well as other classes you might want to run
+3. execute vm_main.pl
 
 Currently Supported
 -------------------
 
 - classpath traversal through user defined classpath
 - loading classes from file system
-- a few instructions that deal with saving values to local variables
-- method execution - static and instance (this automatically includes
-  constructors)
-- static initializers are run (buggy: currently only from directly loaded
-  classes; parent classes are omitted)
-- return instruction
+- many operations that deal with storing and reading variables
+- reading/writing static/instance fields
+- static/instance method execution, including arguments and returning values
+- arrays
+- string literals and some string operations work (concatenating strings with
+  strings for example)
+- a single native method is hardcoded in the interpreter: System.arraycopy()
+  because it is needed so often
+
+Limitations (a lot...)
+-----------
+
+- I guess handling of static initializers is still buggy
+- class literals are unsupported
+- anything that remotely requires a native bridge to the JVM doesn't work
+  Unfortunately that means a lot of useful things can't get tested yet. For
+  example concatenating a string with an integer or putting an integer in a
+  collection requires loading of java.lang.Integer which wants to know its
+  primitive class. No can do.
+- invoking of interface methods is broken; just use the implementation for the
+  variable (ArrayList a = new ArrayList(); etc.)
+- complete lack of support for exceptions, you better program defensively
+- no type checking whatsoever
+  I'm afraid this will incur too high a performance impact. However this makes
+  debugging a nightmare. All kinds of simple errors creep into the variables or
+  the stack and there is no easy way to find out where they came from. Maybe I
+  have to rethink that...
 
 Planned (or likely)
 -------------------
 
 - implementation for all instructions
 - native methods (not JNI but a Perl specific interface I yet have to design)
+  This is of course inevitable.
 - I/O is quite high on my priority list
-- loading classes from JAR files
+- loading classes from JAR files (I think this comes automatically with the
+  library)
+- exceptions
 
 Undecided
 ---------
 
 - threading
-  Threading might be a bit complicated due to Perl's peculiar handling of
+  Threading might be a bit complicated due to Perl's conservative way of
   sharing data between threads. If I find an efficient way to implement multiple
   threads without simply sharing *everything*, I'll do it of course.
-- some sort of Perl JIT
-  This could be accomplished by building strings that are Perl code which can be
-  eval'd. I thought of something along the lines of
-  
-    my $method_ref = eval 'sub { ... do stuff here ... }';
-    $method_ref->();
-    
-  Well, let's see...
 
 Not Planned (or very unlikely)
 ------------------------------
@@ -52,32 +92,14 @@ Not Planned (or very unlikely)
   C/C++ libraries.
 - most of the tooling like JVMTI, debugging and stuff like that
 - GUI stuff (AWT, SWING)
-
-perlmachine Dependencies
-------------------------
-
-perlmachine needs:
-
-- perl 5.10.0 or higher (for switch)
-- Moose (I don't know what version; I guess 'not ancient' is enough)
-(- Log::Log4perl (currently not needed but planned in the short term))
-
-Running perlmachine
--------------------
-
-In order to run perlmachine you need to do the following things:
-
-1. setup GNU Classpath
-  - either you find a precompiled solution or you compile it yourself
-  - if you compile, you might have to -disable-Werror (see https://projects.archlinux.org/svntogit/community.git/tree/classpath/trunk/PKGBUILD),
-    otherwise it didn't work for me
-  - if you have a precompiled version, unpack it
-2. modify vm_main.pl
-  - add entries for the directory that contains the compiled classes from GNU
-    Classpath (well, technically almost any implementation should do because
-    currently only java.lang.Object is ever loaded but in the future the binding
-    might get tighter) as well as other classes you might want to run
-3. execute vm_main.pl
+- some sort of Perl JIT
+  This could be accomplished by building strings that are Perl code which can be
+  eval'd. I thought of something along the lines of
+  
+    my $method_ref = eval 'sub { ... do stuff here ... }';
+    $method_ref->();
+  
+  However I don't think this'll make it.
 
 License
 -------
