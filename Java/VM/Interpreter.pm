@@ -118,6 +118,13 @@ sub run {
 				$stack_frame->push_op( $var );
 				$stack_frame->push_op( $var );
 			}
+			when('dup_x1') {
+				my $var1 = $stack_frame->pop_op;
+				my $var2 = $stack_frame->pop_op;
+				$stack_frame->push_op( $var1 );
+				$stack_frame->push_op( $var2 );
+				$stack_frame->push_op( $var1 );
+			}
 			when('goto') {
 				$self->_set_instruction_index( $instruction->[2] );
 			}
@@ -149,6 +156,30 @@ sub run {
 			}
 			when('dstore_3') {
 				$stack_frame->variables->[3] = $stack_frame->pop_op;
+			}
+			when('fconst_0') {
+				$stack_frame->push_op( Java::VM::Variable->float_variable( 0.0 ) );
+			}
+			when('fconst_1') {
+				$stack_frame->push_op( Java::VM::Variable->float_variable( 1.0 ) );
+			}
+			when('fconst_2') {
+				$stack_frame->push_op( Java::VM::Variable->float_variable( 2.0 ) );
+			}
+			when('fload') {
+				$stack_frame->push_op( $stack_frame->variables->[$instruction->[2]] );
+			}
+			when('fload_0') {
+				$stack_frame->push_op( $stack_frame->variables->[0] );
+			}
+			when('fload_1') {
+				$stack_frame->push_op( $stack_frame->variables->[1] );
+			}
+			when('fload_2') {
+				$stack_frame->push_op( $stack_frame->variables->[2] );
+			}
+			when('fload_3') {
+				$stack_frame->push_op( $stack_frame->variables->[3] );
 			}
 			when('fstore') {
 				$stack_frame->variables->[$instruction->[2]] = $stack_frame->pop_op;
@@ -291,6 +322,9 @@ sub run {
 						continue;
 					}
 				}
+				default {
+					print "unknown constant type $tag_name\n";
+				}
 				}
 			}
 			when('lload') {
@@ -354,6 +388,31 @@ sub run {
 				if( defined $1 != $value->null ) {
 					$self->_set_instruction_index( $instruction->[2] );
 				}
+			}
+			when(/fcmp([gl])/) {
+				my $mode = $2;
+				my $val2 = $stack_frame->pop_op->value;
+				my $val1 = $stack_frame->pop_op->value;
+				
+				my $result;
+				
+				if( $val1 != $val1 || $val2 != $val2 ) {
+					if( $mode eq 'g' ) {
+						$result = 1;
+					} else {
+						$result = -1;
+					}
+				} else {
+					if( $val1 > $val2 ) {
+						$result = 1;
+					} elsif ( $val1 == $val2 ) {
+						$result = 0;
+					} else {
+						$result = -1;
+					}
+				}
+				
+				$stack_frame->push_op( Java::VM::Variable->int_variable( $result ) );
 			}
 			when('invokestatic') {
 				my $class_and_method = $self->_resolve_method( $class, $instruction->[2] );
