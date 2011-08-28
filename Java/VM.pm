@@ -42,7 +42,7 @@ sub start {
 		die 'main class ', $class_name, ' not found';
 	}
 	
-	my $main_method = $main_class->class->get_method( 'main', '([Ljava/lang/String;)V' );
+	my $main_method = $main_class->class->get_method( [ 'main', '([Ljava/lang/String;)V' ] );
 	unless( $main_method ) {
 		die 'main method not found in class ', $main_class;
 	}

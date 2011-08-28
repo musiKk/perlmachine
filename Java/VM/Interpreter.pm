@@ -248,7 +248,6 @@ sub run {
 			when(['ldc','ldc_w','ldc2_w']) {
 				my $constant_pool = $stack_frame->class->class->constant_pool;
 				my $info = $constant_pool->get_info( $instruction->[2] );
-				print 'constant at index ', $instruction->[2], "\n";
 				my $tag_name = $Java::Class::ConstantPool::TAGS{$info->tag};
 				given( $tag_name ) {
 				when('Integer') {
@@ -279,7 +278,7 @@ sub run {
 							$char_array->value->[$i] = $chars[$i];
 						}
 						
-						my $string_constructor = $string_instance->class->class->get_method( '<init>', '([C)V' );
+						my $string_constructor = $string_instance->class->class->get_method( [ '<init>', '([C)V' ] );
 						confess 'couldn\'t find string constructor' unless $string_constructor;
 						
 						my $new_stack_frame = Java::VM::Stackframe->new(
@@ -560,7 +559,7 @@ sub _find_method {
 	my $method_name = shift;
 	my $method_descriptor = shift;
 	
-	my $method = $class->class->get_method( $method_name, $method_descriptor );
+	my $method = $class->class->get_method( [ $method_name, $method_descriptor ] );
 	if( $method ) {
 		return [ $class, $method ];
 	} else {
@@ -581,7 +580,7 @@ sub _get_class {
 	
 	my $class = $classloader->load_class( $class_name );
 	
-	my $method = $class->class->get_method( '<clinit>', '()V' );
+	my $method = $class->class->get_method( [ '<clinit>', '()V' ] );
 	if( $method && $class->requires_initialization ) {
 		# if this is set at the end of initialization, we easily get in an endless recursion
 		$class->requires_initialization( 0 );

@@ -95,11 +95,21 @@ sub BUILD {
 }
 
 sub get_method {
-	my ($self, $method_name, $method_descriptor) = @_;
-	for my $method (@{$self->methods->methods}) {
-		return $method if($method->descriptor eq $method_descriptor && $method->name eq $method_name);
+	my $self = shift;
+	my $name_and_type = shift;
+	for my $method ( @{$self->methods->methods} ) {
+		return $method if $method->name eq $name_and_type->[0] && $method->descriptor eq $name_and_type->[1];
 	}
-	return undef;
+	undef;
+}
+
+sub get_field {
+	my $self = shift;
+	my $name_and_type = shift;
+	for my $field ( @{$self->fields->fields} ) {
+		return $field if $field->name eq $name_and_type->[0] && $field->descriptor eq $name_and_type->[1];
+	}
+	undef;
 }
 
 # the internal name of the class, e.g. java/util/String
