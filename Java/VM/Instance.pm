@@ -21,6 +21,39 @@ has null => (
 	default		=> 0
 );
 
+around 'get_field' => sub {
+	my $orig = shift;
+	my $self = shift;
+	my $fieldref = shift;
+	
+	my $class_name = $fieldref->[0];
+	my $method_name_and_type = $fieldref->[1];
+	
+	# first we search the class from the fieldref
+	my $target_class = $self->class;
+	while( $target_class->class->get_name ne $class_name ) {
+		my $super_class = $target_class->super_class;
+		if( $super_class ) {
+			$target_class = $super_class;
+		} else {
+			print "NoSuchFieldError\n";
+			return undef;
+		}
+	}
+	
+	# now we look for the field
+	until( $target_class->class->get_field( $method_name_and_type ) ) {
+		my $super_class = $target_class->super_class;
+		if( $super_class ) {
+			$target_class = $super_class;
+		} else {
+			print "NoSuchFieldError\n";
+			return undef;
+		}
+	}
+	$self->$orig( [ $target_class->class->get_name, $fieldref->[1] ] );
+};
+
 sub BUILD {
 	my $self = shift;
 	

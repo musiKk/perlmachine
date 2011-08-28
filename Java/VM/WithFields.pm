@@ -21,7 +21,6 @@ sub get_field {
 	my $key = $self->_make_key( $fieldref );
 	return $self->fields->{$key} if( exists $self->fields->{$key} );
 	
-	print "NoSuchFieldError: $key\n";
 	undef;
 }
 
@@ -44,8 +43,8 @@ sub _make_key {
 	$fieldref->[0] . $fieldref->[1]->[0] . $fieldref->[1]->[1];
 }
 
-# takes [ [ $loadedclass, $fieldref], ... ], creates appropriate fields and initializes
-# them
+# takes [ [ $loadedclass, $field ], ... ], creates appropriate fields and
+# initializes them to their default value
 sub create_fields {
 	my $self = shift;
 	my $fields = shift;
