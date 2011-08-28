@@ -29,6 +29,15 @@ In order to run perlmachine you need to do the following things:
     Classpath (well, technically almost any implementation should do because
     currently only java.lang.Object is ever loaded but in the future the binding
     might get tighter) as well as other classes you might want to run
+  - change the name of the main class if needed
+    The name of the main class is provided in normal dot notation (pkg.Test).
+  
+  for example:
+  
+  $classpath->add_entry( '/path/to/classpath/lib' );
+  $classpath->add_entry( '/here/is/mymainclass' );
+  my $vm = Java::VM->new( class_name => 'MyMainClass', ...
+  
 3. execute vm_main.pl
 
 Currently Supported
