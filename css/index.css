@@ -1,7 +1,35 @@
+body {
+	width: 700px;
+	margin-left: auto;
+	margin-right: auto;
+	
+	padding-left: 20px;
+	padding-right: 20px;
+	
+	border-left: 1px black solid;
+	border-right: 1px black solid;
+	
+	font-family: sans-serif;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+.post {
+	width: auto;
+	margin-left: auto;
+	margin-right: auto;
+}
+
 .header {
 	text-align: center;
 	
-	margin: 20px;
+	margin-bottom: 20px;
 	
 	border-width: 2px;
 	border-color: black;
@@ -9,3 +37,4 @@
 	
 	background-color: silver;
 }
+
