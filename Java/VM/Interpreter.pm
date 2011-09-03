@@ -319,7 +319,6 @@ sub run {
 						$new_stack_frame->variables->[1] = $char_array;
 						$self->push_stack_frame( $new_stack_frame );
 						$self->code_array( Java::VM::Bytecode::Decoder::decode( $string_constructor->code_raw ) );
-						continue;
 					}
 				}
 				default {
