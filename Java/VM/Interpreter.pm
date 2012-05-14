@@ -389,7 +389,7 @@ sub run {
 				}
 			}
 			when(/fcmp([gl])/) {
-				my $mode = $2;
+				my $mode = $1;
 				my $val2 = $stack_frame->pop_op->value;
 				my $val1 = $stack_frame->pop_op->value;
 				
