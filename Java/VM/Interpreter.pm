@@ -158,13 +158,13 @@ sub run {
 				$stack_frame->variables->[3] = $stack_frame->pop_op;
 			}
 			when('fconst_0') {
-				$stack_frame->push_op( Java::VM::Variable->float_variable( 0.0 ) );
+				$stack_frame->push_op( Java::VM::Variable::float_variable( 0.0 ) );
 			}
 			when('fconst_1') {
-				$stack_frame->push_op( Java::VM::Variable->float_variable( 1.0 ) );
+				$stack_frame->push_op( Java::VM::Variable::float_variable( 1.0 ) );
 			}
 			when('fconst_2') {
-				$stack_frame->push_op( Java::VM::Variable->float_variable( 2.0 ) );
+				$stack_frame->push_op( Java::VM::Variable::float_variable( 2.0 ) );
 			}
 			when('fload') {
 				$stack_frame->push_op( $stack_frame->variables->[$instruction->[2]] );
@@ -411,7 +411,7 @@ sub run {
 					}
 				}
 				
-				$stack_frame->push_op( Java::VM::Variable->int_variable( $result ) );
+				$stack_frame->push_op( Java::VM::Variable::int_variable( $result ) );
 			}
 			when('invokestatic') {
 				my $class_and_method = $self->_resolve_method( $class, $instruction->[2] );
