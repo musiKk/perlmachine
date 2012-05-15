@@ -413,6 +413,25 @@ sub run {
 				
 				$stack_frame->push_op( Java::VM::Variable::int_variable( $result ) );
 			}
+			when('i2f') {
+				my $int = $stack_frame->pop_op->value;
+				$stack_frame->push_op( Java::VM::Variable::float_variable( $int ) );
+			}
+			when('f2i') {
+				my $float = $stack_frame->pop_op->value;
+				my $int = 0;
+				if( $float == $float ) {
+					# NaN results in 0
+					$int = int($float);
+				}
+				$stack_frame->push_op( Java::VM::Variable::int_variable( $int ) );
+			}
+			when('fmul') {
+				my $val2 = $stack_frame->pop_op->value;
+				my $val1 = $stack_frame->pop_op->value;
+				my $result = $val1 * $val2;
+				$stack_frame->push_op( Java::VM::Variable::float_variable( $result ) );
+			}
 			when('invokestatic') {
 				my $class_and_method = $self->_resolve_method( $class, $instruction->[2] );
 				
